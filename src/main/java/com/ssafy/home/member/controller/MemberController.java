@@ -1,0 +1,123 @@
+package com.ssafy.home.member.controller;
+
+import com.ssafy.home.common.response.ApiResponse;
+import com.ssafy.home.member.dto.MemberLoginRequest;
+import com.ssafy.home.member.dto.MemberResponse;
+import com.ssafy.home.member.dto.MemberSignupRequest;
+import com.ssafy.home.member.dto.MemberUpdateRequest;
+import com.ssafy.home.member.service.MemberErrorCode;
+import com.ssafy.home.member.service.MemberException;
+import com.ssafy.home.member.service.MemberService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api")
+public class MemberController {
+
+    public static final String LOGIN_MEMBER_ID = "LOGIN_MEMBER_ID";
+
+    private final MemberService memberService;
+
+    public MemberController(MemberService memberService) {
+        this.memberService = memberService;
+    }
+
+    @PostMapping("/members")
+    public ResponseEntity<ApiResponse<MemberResponse>> signup(@RequestBody MemberSignupRequest request) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("created", memberService.signup(request)));
+        } catch (MemberException e) {
+            return error(e);
+        }
+    }
+
+    @PostMapping("/auth/login")
+    public ResponseEntity<ApiResponse<MemberResponse>> login(
+            @RequestBody MemberLoginRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        try {
+            MemberResponse member = memberService.login(request == null ? null : request.email(),
+                    request == null ? null : request.password());
+            httpRequest.getSession(true).setAttribute(LOGIN_MEMBER_ID, member.memberId());
+            return ResponseEntity.ok(ApiResponse.ok(member));
+        } catch (MemberException e) {
+            return error(e);
+        }
+    }
+
+    @PostMapping("/auth/logout")
+    public ApiResponse<Map<String, Boolean>> logout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        return ApiResponse.ok("logged out", Map.of("loggedOut", true));
+    }
+
+    @GetMapping("/members/me")
+    public ResponseEntity<ApiResponse<MemberResponse>> me(HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(memberService.findCurrentMember(currentMemberId(request))));
+        } catch (MemberException e) {
+            return error(e);
+        }
+    }
+
+    @PutMapping("/members/me")
+    public ResponseEntity<ApiResponse<MemberResponse>> updateMe(
+            @RequestBody MemberUpdateRequest requestBody,
+            HttpServletRequest request
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(memberService.updateCurrentMember(currentMemberId(request), requestBody)));
+        } catch (MemberException e) {
+            return error(e);
+        }
+    }
+
+    @DeleteMapping("/members/me")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> deleteMe(HttpServletRequest request) {
+        try {
+            memberService.deleteCurrentMember(currentMemberId(request));
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            return ResponseEntity.ok(ApiResponse.ok("deleted", Map.of("deleted", true)));
+        } catch (MemberException e) {
+            return error(e);
+        }
+    }
+
+    private static Long currentMemberId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        Object value = session.getAttribute(LOGIN_MEMBER_ID);
+        return value instanceof Long memberId ? memberId : null;
+    }
+
+    private static <T> ResponseEntity<ApiResponse<T>> error(MemberException e) {
+        HttpStatus status = switch (e.errorCode()) {
+            case VALIDATION -> HttpStatus.BAD_REQUEST;
+            case DUPLICATE_EMAIL -> HttpStatus.CONFLICT;
+            case INVALID_CREDENTIALS, UNAUTHENTICATED -> HttpStatus.UNAUTHORIZED;
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+        };
+        return ResponseEntity.status(status).body(ApiResponse.fail(e.getMessage(), null));
+    }
+}

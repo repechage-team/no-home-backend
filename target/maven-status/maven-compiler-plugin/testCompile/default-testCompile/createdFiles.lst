@@ -1,0 +1,16 @@
+com\ssafy\home\common\health\controller\HealthControllerTest.class
+com\ssafy\home\member\mapper\MemberMapperTest.class
+com\ssafy\home\publicdata\service\PublicDataImportServiceTest$1.class
+com\ssafy\home\publicdata\service\PublicDataImportServiceTest$StubMapper.class
+com\ssafy\home\publicdata\service\PublicDataImportServiceTest.class
+com\ssafy\home\publicdata\client\PublicDataApiKeyProviderTest.class
+com\ssafy\home\house\util\ApiRowHashGeneratorTest.class
+com\ssafy\home\house\service\HouseServiceTest.class
+com\ssafy\home\publicdata\service\AptTradeImportCommandFactoryTest.class
+com\ssafy\home\house\controller\HouseControllerTest.class
+com\ssafy\home\house\service\HouseServiceTest$StubHouseMapper.class
+com\ssafy\home\member\service\MemberServiceTest.class
+com\ssafy\home\member\service\MemberServiceTest$StubMemberMapper.class
+com\ssafy\home\common\response\ApiResponseTest.class
+com\ssafy\home\member\controller\MemberControllerTest.class
+com\ssafy\home\publicdata\client\PublicDataAptTradeXmlParserTest.class

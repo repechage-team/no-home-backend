@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.home.house.mapper.HouseMapper">
+
+    <select id="selectRegionsByLawdCd" resultType="com.ssafy.home.house.dto.RegionResponse">
+        SELECT
+            region_id,
+            lawd_cd,
+            legal_dong_code,
+            sido,
+            sigungu,
+            umd_nm,
+            lat,
+            lng
+        FROM regions
+        WHERE lawd_cd = #{lawdCd}
+        ORDER BY umd_nm
+    </select>
+
+    <select id="selectHousesByAptName" resultType="com.ssafy.home.house.dto.HouseResponse">
+        SELECT
+            house_id,
+            region_id,
+            sgg_cd,
+            umd_nm,
+            jibun,
+            apt_nm,
+            build_year,
+            lat,
+            lng
+        FROM houses
+        WHERE apt_nm LIKE CONCAT('%', #{aptName}, '%')
+        ORDER BY apt_nm, umd_nm, jibun
+    </select>
+
+    <select id="selectHouseDeals" resultType="com.ssafy.home.house.dto.HouseDealResponse">
+        SELECT
+            hd.deal_id,
+            hd.house_id,
+            h.apt_nm,
+            h.umd_nm,
+            h.jibun,
+            hd.lawd_cd,
+            hd.deal_ymd,
+            hd.deal_date,
+            hd.deal_amount,
+            hd.deal_amount_manwon,
+            hd.exclu_use_ar,
+            hd.floor
+        FROM house_deals hd
+        INNER JOIN houses h ON h.house_id = hd.house_id
+        WHERE hd.lawd_cd = #{lawdCd}
+          AND hd.deal_ymd = #{dealYmd}
+        ORDER BY hd.deal_date DESC, h.apt_nm, hd.deal_id DESC
+    </select>
+
+    <sql id="houseDealSearchFromWhere">
+        FROM house_deals hd
+        INNER JOIN houses h ON h.house_id = hd.house_id
+        INNER JOIN regions r ON r.region_id = h.region_id
+        WHERE hd.house_type = 'apartment'
+          AND hd.deal_type = 'sale'
+        <if test="condition.lawdCd != null">
+          AND hd.lawd_cd = #{condition.lawdCd}
+        </if>
+        <if test="condition.sido != null">
+          AND r.sido = #{condition.sido}
+        </if>
+        <if test="condition.sigungu != null">
+          AND r.sigungu = #{condition.sigungu}
+        </if>
+        <if test="condition.umdNm != null">
+          AND h.umd_nm = #{condition.umdNm}
+        </if>
+        <if test="condition.aptName != null">
+          AND h.apt_nm LIKE CONCAT('%', #{condition.aptName}, '%')
+        </if>
+        <if test="condition.dealYmd != null">
+          AND hd.deal_ymd = #{condition.dealYmd}
+        </if>
+    </sql>
+
+    <select id="searchHouseDeals" resultType="com.ssafy.home.house.dto.HouseSearchResultResponse">
+        SELECT
+            hd.deal_id,
+            hd.house_id,
+            h.apt_nm,
+            r.sido,
+            r.sigungu,
+            h.umd_nm,
+            h.jibun,
+            h.build_year,
+            hd.lawd_cd,
+            hd.deal_ymd,
+            hd.deal_date,
+            hd.deal_amount,
+            hd.deal_amount_manwon,
+            hd.exclu_use_ar,
+            hd.floor,
+            h.lat,
+            h.lng
+        <include refid="houseDealSearchFromWhere"/>
+        ORDER BY hd.deal_date DESC, hd.deal_id DESC
+        LIMIT #{condition.size} OFFSET #{condition.offset}
+    </select>
+
+    <select id="countHouseDeals" resultType="long">
+        SELECT COUNT(*)
+        <include refid="houseDealSearchFromWhere"/>
+    </select>
+
+    <select id="selectImportBatch" resultType="com.ssafy.home.house.dto.ImportBatchResponse">
+        SELECT
+            import_batch_id,
+            source_api,
+            lawd_cd,
+            deal_ymd,
+            house_type,
+            deal_type,
+            status,
+            total_count,
+            imported_count,
+            skipped_count,
+            error_message,
+            requested_at,
+            completed_at
+        FROM public_data_import_batches
+        WHERE source_api = #{sourceApi}
+          AND lawd_cd = #{lawdCd}
+          AND deal_ymd = #{dealYmd}
+          AND house_type = #{houseType}
+          AND deal_type = #{dealType}
+    </select>
+</mapper>

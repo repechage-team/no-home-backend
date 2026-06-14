@@ -1,0 +1,12 @@
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\common\health\controller\HealthControllerTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\common\response\ApiResponseTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\house\controller\HouseControllerTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\house\service\HouseServiceTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\house\util\ApiRowHashGeneratorTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\member\controller\MemberControllerTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\member\mapper\MemberMapperTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\member\service\MemberServiceTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\publicdata\client\PublicDataApiKeyProviderTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\publicdata\client\PublicDataAptTradeXmlParserTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\publicdata\service\AptTradeImportCommandFactoryTest.java
+C:\SSAFY\workspace\NoHome\Backend\src\test\java\com\ssafy\home\publicdata\service\PublicDataImportServiceTest.java

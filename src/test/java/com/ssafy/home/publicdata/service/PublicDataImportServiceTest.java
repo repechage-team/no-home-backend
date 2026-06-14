@@ -1,0 +1,158 @@
+package com.ssafy.home.publicdata.service;
+
+import com.ssafy.home.common.region.SeoulLawdCodeResolver;
+import com.ssafy.home.publicdata.client.PublicDataAptTradeClient;
+import com.ssafy.home.publicdata.client.PublicDataAptTradeXmlParser;
+import com.ssafy.home.publicdata.client.PublicDataApiKeyProvider;
+import com.ssafy.home.publicdata.dto.PublicDataImportResult;
+import com.ssafy.home.publicdata.mapper.HouseDealInsertCommand;
+import com.ssafy.home.publicdata.mapper.HouseUpsertCommand;
+import com.ssafy.home.publicdata.mapper.PublicDataImportMapper;
+import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class PublicDataImportServiceTest {
+
+    @Test
+    void importSkipsWhenSuccessBatchAlreadyExists() {
+        StubMapper mapper = new StubMapper();
+        mapper.successBatchExists = true;
+        PublicDataImportService service = newService(mapper, sampleXml());
+
+        PublicDataImportResult result = service.importAptTrades("11590", "202405");
+
+        assertThat(result.alreadyImported()).isTrue();
+        assertThat(mapper.requestedBatchCount).isZero();
+        assertThat(mapper.insertDealAttempts).isZero();
+    }
+
+    @Test
+    void importInsertsFirstApiRowAndSkipsDuplicateHashOnRepeatedRows() {
+        StubMapper mapper = new StubMapper();
+        PublicDataImportService service = newService(mapper, sampleXmlWithDuplicateRows());
+
+        PublicDataImportResult result = service.importAptTrades("11590", "202405");
+
+        assertThat(result.importedCount()).isEqualTo(1);
+        assertThat(result.skippedCount()).isEqualTo(1);
+        assertThat(mapper.successBatchTotalCount).isEqualTo(2);
+        assertThat(mapper.insertDealAttempts).isEqualTo(2);
+    }
+
+    @Test
+    void importReadsAdditionalPagesUntilProcessedCountReachesTotalCount() {
+        StubMapper mapper = new StubMapper();
+        PublicDataImportService service = newService(mapper, Map.of(
+                1, """
+                        <response><body><totalCount>2</totalCount><items>
+                          <item><sggCd>11590</sggCd><umdNm>상도동</umdNm><jibun>10</jibun><aptNm>상도아파트</aptNm><buildYear>2011</buildYear><dealYear>2024</dealYear><dealMonth>5</dealMonth><dealDay>12</dealDay><dealAmount>150,000</dealAmount><excluUseAr>84.970</excluUseAr><floor>12</floor></item>
+                        </items></body></response>
+                        """,
+                2, """
+                        <response><body><totalCount>2</totalCount><items>
+                          <item><sggCd>11590</sggCd><umdNm>흑석동</umdNm><jibun>20</jibun><aptNm>흑석아파트</aptNm><buildYear>2015</buildYear><dealYear>2024</dealYear><dealMonth>5</dealMonth><dealDay>13</dealDay><dealAmount>170,000</dealAmount><excluUseAr>84.970</excluUseAr><floor>7</floor></item>
+                        </items></body></response>
+                        """
+        ));
+
+        PublicDataImportResult result = service.importAptTrades("11590", "202405");
+
+        assertThat(result.totalCount()).isEqualTo(2);
+        assertThat(result.importedCount()).isEqualTo(2);
+        assertThat(mapper.insertDealAttempts).isEqualTo(2);
+    }
+
+    private static PublicDataImportService newService(StubMapper mapper, String xml) {
+        return newService(mapper, Map.of(1, xml));
+    }
+
+    private static PublicDataImportService newService(StubMapper mapper, Map<Integer, String> xmlByPageNo) {
+        PublicDataAptTradeClient client = new PublicDataAptTradeClient(new PublicDataApiKeyProvider("test-key")) {
+            @Override
+            public String fetchXml(String lawdCd, String dealYmd, int pageNo, int numOfRows) {
+                return xmlByPageNo.getOrDefault(pageNo, "<response><body><totalCount>0</totalCount><items></items></body></response>");
+            }
+        };
+        return new PublicDataImportService(
+                client,
+                new PublicDataAptTradeXmlParser(),
+                mapper,
+                new AptTradeImportCommandFactory(),
+                new SeoulLawdCodeResolver()
+        );
+    }
+
+    private static String sampleXmlWithDuplicateRows() {
+        return """
+                <response><body><totalCount>2</totalCount><items>
+                  <item><sggCd>11590</sggCd><umdNm>상도동</umdNm><jibun>10</jibun><aptNm>상도아파트</aptNm><buildYear>2011</buildYear><dealYear>2024</dealYear><dealMonth>5</dealMonth><dealDay>12</dealDay><dealAmount>150,000</dealAmount><excluUseAr>84.970</excluUseAr><floor>12</floor></item>
+                  <item><sggCd>11590</sggCd><umdNm>상도동</umdNm><jibun>10</jibun><aptNm>상도아파트</aptNm><buildYear>2011</buildYear><dealYear>2024</dealYear><dealMonth>5</dealMonth><dealDay>12</dealDay><dealAmount>150,000</dealAmount><excluUseAr>84.970</excluUseAr><floor>12</floor></item>
+                </items></body></response>
+                """;
+    }
+
+    private static String sampleXml() {
+        return """
+                <response><body><totalCount>1</totalCount><items>
+                  <item><sggCd>11590</sggCd><umdNm>상도동</umdNm><jibun>10</jibun><aptNm>상도아파트</aptNm><buildYear>2011</buildYear><dealYear>2024</dealYear><dealMonth>5</dealMonth><dealDay>12</dealDay><dealAmount>150,000</dealAmount><excluUseAr>84.970</excluUseAr><floor>12</floor></item>
+                </items></body></response>
+                """;
+    }
+
+    private static class StubMapper implements PublicDataImportMapper {
+        private boolean successBatchExists;
+        private int requestedBatchCount;
+        private int insertDealAttempts;
+        private int successBatchTotalCount;
+        private final Set<String> hashes = new HashSet<>();
+
+        @Override
+        public Optional<Long> selectSuccessBatchId(String sourceApi, String lawdCd, String dealYmd, String houseType, String dealType) {
+            return successBatchExists ? Optional.of(1L) : Optional.empty();
+        }
+
+        @Override
+        public void upsertRequestedBatch(String sourceApi, String lawdCd, String dealYmd, String houseType, String dealType) {
+            requestedBatchCount++;
+        }
+
+        @Override
+        public void updateBatchSuccess(String sourceApi, String lawdCd, String dealYmd, String houseType, String dealType, int totalCount, int importedCount, int skippedCount) {
+            successBatchTotalCount = totalCount;
+        }
+
+        @Override
+        public void updateBatchFailed(String sourceApi, String lawdCd, String dealYmd, String houseType, String dealType, String errorMessage) {
+        }
+
+        @Override
+        public void upsertRegion(String lawdCd, String sido, String sigungu, String umdNm) {
+        }
+
+        @Override
+        public Optional<Long> selectRegionId(String lawdCd, String umdNm) {
+            return Optional.of(7L);
+        }
+
+        @Override
+        public void upsertHouse(HouseUpsertCommand command) {
+        }
+
+        @Override
+        public Optional<Long> selectHouseId(HouseUpsertCommand command) {
+            return Optional.of(11L);
+        }
+
+        @Override
+        public int insertHouseDealIfAbsent(HouseDealInsertCommand command) {
+            insertDealAttempts++;
+            return hashes.add(command.apiRowHash()) ? 1 : 0;
+        }
+    }
+}
