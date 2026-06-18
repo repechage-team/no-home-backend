@@ -99,3 +99,15 @@ CREATE TABLE IF NOT EXISTS members (
     PRIMARY KEY (member_id),
     UNIQUE KEY uq_members_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS member_refresh_tokens (
+    member_id BIGINT NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (member_id),
+    UNIQUE KEY uq_member_refresh_tokens_hash (token_hash),
+    CONSTRAINT fk_member_refresh_tokens_member
+        FOREIGN KEY (member_id) REFERENCES members (member_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

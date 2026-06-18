@@ -1,6 +1,10 @@
 package com.ssafy.home.member.controller;
 
 import com.ssafy.home.common.response.ApiResponse;
+import com.ssafy.home.member.auth.AuthCookieService;
+import com.ssafy.home.member.auth.AuthenticatedMember;
+import com.ssafy.home.member.auth.JwtTokenPair;
+import com.ssafy.home.member.auth.MemberAuthService;
 import com.ssafy.home.member.dto.MemberLoginRequest;
 import com.ssafy.home.member.dto.MemberResponse;
 import com.ssafy.home.member.dto.MemberSignupRequest;
@@ -9,7 +13,7 @@ import com.ssafy.home.member.service.MemberErrorCode;
 import com.ssafy.home.member.service.MemberException;
 import com.ssafy.home.member.service.MemberService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,12 +30,18 @@ import java.util.Map;
 @RequestMapping("/api")
 public class MemberController {
 
-    public static final String LOGIN_MEMBER_ID = "LOGIN_MEMBER_ID";
-
     private final MemberService memberService;
+    private final MemberAuthService memberAuthService;
+    private final AuthCookieService authCookieService;
 
-    public MemberController(MemberService memberService) {
+    public MemberController(
+            MemberService memberService,
+            MemberAuthService memberAuthService,
+            AuthCookieService authCookieService
+    ) {
         this.memberService = memberService;
+        this.memberAuthService = memberAuthService;
+        this.authCookieService = authCookieService;
     }
 
     @PostMapping("/members")
@@ -46,24 +56,39 @@ public class MemberController {
     @PostMapping("/auth/login")
     public ResponseEntity<ApiResponse<MemberResponse>> login(
             @RequestBody MemberLoginRequest request,
-            HttpServletRequest httpRequest
+            HttpServletResponse response
     ) {
         try {
-            MemberResponse member = memberService.login(request == null ? null : request.email(),
-                    request == null ? null : request.password());
-            httpRequest.getSession(true).setAttribute(LOGIN_MEMBER_ID, member.memberId());
-            return ResponseEntity.ok(ApiResponse.ok(member));
+            MemberAuthService.LoginResult result = memberAuthService.login(
+                    request == null ? null : request.email(),
+                    request == null ? null : request.password()
+            );
+            authCookieService.writeTokenPair(response, result.tokens());
+            return ResponseEntity.ok(ApiResponse.ok(result.member()));
         } catch (MemberException e) {
             return error(e);
         }
     }
 
-    @PostMapping("/auth/logout")
-    public ApiResponse<Map<String, Boolean>> logout(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
+    @PostMapping("/auth/refresh")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> refresh(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        try {
+            JwtTokenPair tokens = memberAuthService.refresh(authCookieService.refreshToken(request));
+            authCookieService.writeTokenPair(response, tokens);
+            return ResponseEntity.ok(ApiResponse.ok(Map.of("refreshed", true)));
+        } catch (MemberException e) {
+            authCookieService.clear(response);
+            return error(e);
         }
+    }
+
+    @PostMapping("/auth/logout")
+    public ApiResponse<Map<String, Boolean>> logout(HttpServletRequest request, HttpServletResponse response) {
+        memberAuthService.logout(authCookieService.refreshToken(request));
+        authCookieService.clear(response);
         return ApiResponse.ok("logged out", Map.of("loggedOut", true));
     }
 
@@ -89,13 +114,14 @@ public class MemberController {
     }
 
     @DeleteMapping("/members/me")
-    public ResponseEntity<ApiResponse<Map<String, Boolean>>> deleteMe(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> deleteMe(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
         try {
+            memberAuthService.revokeMember(currentMemberId(request));
             memberService.deleteCurrentMember(currentMemberId(request));
-            HttpSession session = request.getSession(false);
-            if (session != null) {
-                session.invalidate();
-            }
+            authCookieService.clear(response);
             return ResponseEntity.ok(ApiResponse.ok("deleted", Map.of("deleted", true)));
         } catch (MemberException e) {
             return error(e);
@@ -103,11 +129,7 @@ public class MemberController {
     }
 
     private static Long currentMemberId(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            return null;
-        }
-        Object value = session.getAttribute(LOGIN_MEMBER_ID);
+        Object value = request.getAttribute(AuthenticatedMember.REQUEST_ATTRIBUTE);
         return value instanceof Long memberId ? memberId : null;
     }
 

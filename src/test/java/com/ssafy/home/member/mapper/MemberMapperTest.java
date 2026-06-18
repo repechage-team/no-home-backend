@@ -29,6 +29,9 @@ class MemberMapperTest {
     @Autowired
     private MemberMapper memberMapper;
 
+    @Autowired
+    private RefreshTokenMapper refreshTokenMapper;
+
     @Test
     void insertMemberCanBeSelectedByEmail() {
         MemberInsertCommand command = insertMember("email-select@example.com", "hash-email", "Email User", "010-1111-1111");
@@ -91,6 +94,17 @@ class MemberMapperTest {
 
         assertThatThrownBy(() -> memberMapper.insertMember(duplicate))
                 .isInstanceOf(DuplicateKeyException.class);
+    }
+
+    @Test
+    void refreshTokenCanBeStoredRotatedAndRevoked() {
+        MemberInsertCommand command = insertMember("refresh@example.com", "hash", "Refresh User", null);
+        java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusDays(7);
+
+        assertThat(refreshTokenMapper.upsert(command.getMemberId(), "hash-one", expiresAt)).isEqualTo(1);
+        assertThat(refreshTokenMapper.rotate(command.getMemberId(), "hash-one", "hash-two", expiresAt)).isEqualTo(1);
+        assertThat(refreshTokenMapper.rotate(command.getMemberId(), "hash-one", "hash-three", expiresAt)).isZero();
+        assertThat(refreshTokenMapper.deleteByTokenHash("hash-two")).isEqualTo(1);
     }
 
     private MemberInsertCommand insertMember(String email, String passwordHash, String name, String phone) {
