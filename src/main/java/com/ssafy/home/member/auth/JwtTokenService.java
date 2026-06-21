@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.home.member.service.MemberErrorCode;
 import com.ssafy.home.member.service.MemberException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +33,7 @@ public class JwtTokenService {
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
+    @Autowired
     public JwtTokenService(
             @Value("${auth.jwt.secret}") String secret,
             @Value("${auth.jwt.access-token-seconds}") long accessTokenSeconds,
