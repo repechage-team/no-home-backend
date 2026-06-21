@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.ssafy.home.member.mapper.MemberMapperTest
--------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.543 s -- in com.ssafy.home.member.mapper.MemberMapperTest
