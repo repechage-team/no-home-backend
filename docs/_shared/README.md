@@ -22,7 +22,6 @@ updated: 2026-06-21
 - [2026-06-21 시드 데이터 더블 인코딩](issues/2026-06-21-seed-data-double-encoding.md) — `status: resolved`
 
 ## 트러블슈팅 (troubleshooting/)
-- [2026-06-21 환경 이슈(Docker/포트/MySQL/권한)](troubleshooting/2026-06-21-environment.md)
 - [2026-06-21 Spring Boot 3.5 버전업](troubleshooting/2026-06-21-version-upgrade.md)
 
 ## 의사결정 (adr/)

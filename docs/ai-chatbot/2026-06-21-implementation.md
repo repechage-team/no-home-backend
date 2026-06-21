@@ -79,6 +79,5 @@ AI 로그의 허용 데이터와 환경별 활성화 절차는 [AI 챗봇 로그
 - ☐ Phase 5: 대화기억(용도 C) — `FWA_03_AI_lab`의 `MessageWindowChatMemory` 패턴 차용 예정.
 
 ## 5. 트러블슈팅 기록 (종류별)
-- [환경 이슈](../_shared/troubleshooting/2026-06-21-environment.md) — Docker/포트/MySQL/권한
 - [버전업 이슈](../_shared/troubleshooting/2026-06-21-version-upgrade.md) — Spring Boot 3.5 전환
 - [AI 응답/프롬프트](troubleshooting/2026-06-21-ai-prompt-and-hallucination.md) — "환각"처럼 보인 인코딩 문제

@@ -8,7 +8,6 @@ author: 이정헌
 created: 2026-06-21
 updated: 2026-06-21
 related:
-  - ../../ai-chatbot/2026-06-21-claude-code-handoff.md
   - ../../ai-chatbot/2026-06-21-backlog.md
 ---
 
