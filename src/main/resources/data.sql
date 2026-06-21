@@ -1,3 +1,7 @@
+-- docker-entrypoint가 init 스크립트를 적재할 때 클라이언트 charset이 utf8mb4가 아니면
+-- 한글이 더블 인코딩되어 저장된다. 세션 charset을 명시해 방지한다.
+SET NAMES utf8mb4;
+
 INSERT INTO regions (lawd_cd, legal_dong_code, sido, sigungu, umd_nm)
 VALUES
     ('11590', '1159010500', '서울특별시', '동작구', '흑석동'),

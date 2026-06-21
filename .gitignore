@@ -1,4 +1,10 @@
 .env
+.env.*
+!.env.example
 target/
+.idea/
+*.iml
 *.log
 *.pid
+.DS_Store
+Thumbs.db
