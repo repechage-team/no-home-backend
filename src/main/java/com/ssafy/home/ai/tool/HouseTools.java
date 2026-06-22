@@ -167,7 +167,8 @@ public class HouseTools {
 
     // 거래연월(dealYmd) 형식·범위 검증. 유효하거나 비어 있으면 null, 잘못되면 사용자 안내 문자열을 반환.
     // 비어 있으면 자동 임포트 없이 DB만 조회하므로 형식 검증 대상이 아니다.
-    static String dealYmdError(String dealYmd, YearMonth now) {
+    // 에이전트 모드(AgentCommandGuards)도 동일한 연월 가드를 재사용하므로 public으로 노출한다.
+    public static String dealYmdError(String dealYmd, YearMonth now) {
         if (dealYmd == null || dealYmd.isBlank()) {
             return null;
         }
