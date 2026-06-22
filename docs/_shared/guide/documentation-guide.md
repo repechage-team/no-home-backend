@@ -5,7 +5,7 @@ type: guide
 status: living          # 리빙 문서(상시 갱신)
 author: 이정헌
 created: 2026-06-21
-updated: 2026-06-21
+updated: 2026-06-22
 ---
 
 # 문서 작성 가이드
@@ -21,10 +21,14 @@ docs/
     templates/             # 복사용 양식
     issues/                # 여러 도메인에 걸친 이슈
     troubleshooting/       # 공통/인프라 트러블슈팅
+    reports/               # 교차 보고서(예: 문서 전략 노트)
     adr/                   # (선택) 팀 의사결정 기록
   <domain>/                # 기능(도메인) 단위. 코드 패키지명과 맞춤
-    README.md              # 도메인 문서 목록
-    <문서들>
+    README.md              # 도메인 문서 목록(인덱스)
+    proposals/             # type: proposal
+    handoff/               # 인계 / 재개 가이드
+    backlog/               # 남은 작업 백로그(시간순)
+    reports/               # type: report (구현·정책·시나리오 등)
     troubleshooting/       # 그 도메인 한정 트러블슈팅
 ```
 - **도메인 디렉토리**는 백엔드 패키지명과 일치시킨다: `ai-chatbot`, `house`, `member`, `publicdata`, `common`.
@@ -60,7 +64,7 @@ related:                  # (선택) 상대경로 링크
 ## 4. 새 문서 추가 절차
 1. 종류 결정 → 소속(도메인 vs `_shared`) 결정.
 2. [템플릿](../templates/)에서 맞는 양식 복사.
-3. 파일명 규칙 적용(기록형=날짜 프리픽스).
+3. 파일명 규칙 적용(기록형=날짜 프리픽스) + **type별 폴더 배치**(proposal→`proposals/`, handoff→`handoff/`, backlog→`backlog/`, report→`reports/`, troubleshooting→`troubleshooting/`).
 4. frontmatter 채우기(`created`=오늘, `updated`=오늘).
 5. 관련 문서와 **상호 링크**(상대경로) 연결.
 6. 해당 도메인 `README.md` 인덱스에 한 줄 추가(날짜 내림차순).

@@ -8,7 +8,7 @@ author: 이정헌
 created: 2026-06-21
 updated: 2026-06-22
 related:
-  - ../../ai-chatbot/2026-06-21-backlog.md
+  - ../../ai-chatbot/backlog/2026-06-21-backlog.md
 ---
 
 # ISSUE: 운영 환경 보안 설정 fail-open (JWT secret / 쿠키 Secure)

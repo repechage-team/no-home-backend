@@ -8,7 +8,7 @@ created: 2026-06-21
 updated: 2026-06-21
 related:
   - 2026-06-21-implementation.md
-  - 2026-06-21-backlog.md
+  - ../backlog/2026-06-21-backlog.md
   - 2026-06-21-usage-limiter-ux-scenarios.md
 ---
 
@@ -111,6 +111,6 @@ AI_CHAT_LOG_LEVEL=INFO
 - Tool DEBUG 로그에 구·동·아파트명·거래연월·개별 가격이 포함되지 않아야 한다.
 - `.env.example`에는 안전한 운영 기본값만 있어야 한다.
 
-자동화 검증은 `AiConfigTest`와 `HouseToolsTest`에서 수행한다. 전체 구현 현황은 [AI 챗봇 구현 & E2E 검증 정리](2026-06-21-implementation.md), 후속 운영 안전망은 [AI 챗봇 남은 작업 백로그](2026-06-21-backlog.md)를 참고한다.
+자동화 검증은 `AiConfigTest`와 `HouseToolsTest`에서 수행한다. 전체 구현 현황은 [AI 챗봇 구현 & E2E 검증 정리](2026-06-21-implementation.md), 후속 운영 안전망은 [AI 챗봇 남은 작업 백로그](../backlog/2026-06-21-backlog.md)를 참고한다.
 
 검증 결과: 백엔드 전체 테스트 72건 통과, 실패·오류·건너뜀 0건.

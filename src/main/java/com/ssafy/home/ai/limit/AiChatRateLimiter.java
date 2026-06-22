@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Component
 public class AiChatRateLimiter {
 
+    private final boolean enabled;
     private final int maxRequests;
     private final Duration windowDuration;
     private final Clock clock;
@@ -20,25 +21,34 @@ public class AiChatRateLimiter {
 
     @Autowired
     public AiChatRateLimiter(
+            @Value("${ai.chat.rate-limit.enabled:true}") boolean enabled,
             @Value("${ai.chat.rate-limit.requests:10}") int maxRequests,
             @Value("${ai.chat.rate-limit.window:1m}") Duration windowDuration
     ) {
-        this(maxRequests, windowDuration, Clock.systemUTC());
+        this(enabled, maxRequests, windowDuration, Clock.systemUTC());
     }
 
     AiChatRateLimiter(int maxRequests, Duration windowDuration, Clock clock) {
+        this(true, maxRequests, windowDuration, clock);
+    }
+
+    AiChatRateLimiter(boolean enabled, int maxRequests, Duration windowDuration, Clock clock) {
         if (maxRequests <= 0) {
             throw new IllegalArgumentException("AI chat rate limit requests must be positive.");
         }
         if (windowDuration == null || windowDuration.isZero() || windowDuration.isNegative()) {
             throw new IllegalArgumentException("AI chat rate limit window must be positive.");
         }
+        this.enabled = enabled;
         this.maxRequests = maxRequests;
         this.windowDuration = windowDuration;
         this.clock = clock;
     }
 
     public Decision acquire(Long memberId) {
+        if (!enabled) {
+            return Decision.granted();
+        }
         if (memberId == null) {
             return Decision.rateLimited(1);
         }
@@ -62,7 +72,7 @@ public class AiChatRateLimiter {
     }
 
     public void release(Long memberId) {
-        if (memberId == null) {
+        if (!enabled || memberId == null) {
             return;
         }
         windows.computeIfPresent(memberId, (key, current) ->

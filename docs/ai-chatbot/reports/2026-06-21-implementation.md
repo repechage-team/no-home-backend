@@ -7,19 +7,19 @@ author: 이정헌
 created: 2026-06-21
 updated: 2026-06-21
 related:
-  - 2026-06-21-proposal.md
-  - 2026-06-21-backlog.md
+  - ../proposals/2026-06-21-proposal.md
+  - ../backlog/2026-06-21-backlog.md
   - 2026-06-21-ai-logging-privacy-policy.md
   - 2026-06-21-usage-limiter-ux-scenarios.md
-  - ../_shared/issues/2026-06-21-seed-data-double-encoding.md
-  - ../_shared/issues/2026-06-21-prod-jwt-fail-closed.md
-  - ../_shared/issues/2026-06-21-frontend-component-test-infra.md
-  - troubleshooting/2026-06-21-ai-prompt-and-hallucination.md
+  - ../../_shared/issues/2026-06-21-seed-data-double-encoding.md
+  - ../../_shared/issues/2026-06-21-prod-jwt-fail-closed.md
+  - ../../_shared/issues/2026-06-21-frontend-component-test-infra.md
+  - ../troubleshooting/2026-06-21-ai-prompt-and-hallucination.md
 ---
 
 # AI 챗봇 구현 & E2E 검증 정리
 
-관련: [도입 제안서](2026-06-21-proposal.md)
+관련: [도입 제안서](../proposals/2026-06-21-proposal.md)
 
 ## 1. 무엇을 만들었나
 서울 아파트 실거래가를 자연어로 묻는 AI 챗봇. 사용자가 "동작구 2024년 5월 실거래가" 같이 물으면
@@ -34,7 +34,7 @@ LLM이 `@Tool`로 기존 실거래가 DB를 조회해 답한다. 기반: 사내 
 | `ai/tool/HouseTools.java` | `@Tool searchSeoulAptDeals` — `SeoulLawdCodeResolver`로 구→lawdCd 변환 후 기존 `HouseService.searchHouseDeals()` 재사용, 건수·평균/최저/최고가·대표거래 요약. **dealYmd 형식·범위 검증(YYYYMM·2006~현재·미래 불가), 자동 임포트 실패 친화 폴백(503 아님), 연월 미지정 시 DB우선+되묻기** |
 | `ai/controller/AiChatController.java` | `POST /api/ai/chat`, `ApiResponse<String>`, temperature 0 + 고유명사 보존 프롬프트 |
 | `common/config/AuthWebConfig.java` | 인터셉터에 `/api/ai/**` 추가 → **로그인 사용자 전용** |
-| `member/auth/JwtTokenService.java` | DI 생성자에 `@Autowired` 추가(버전업으로 드러난 잠복 버그, [트러블슈팅](../_shared/troubleshooting/2026-06-21-version-upgrade.md)) |
+| `member/auth/JwtTokenService.java` | DI 생성자에 `@Autowired` 추가(버전업으로 드러난 잠복 버그, [트러블슈팅](../../_shared/troubleshooting/2026-06-21-version-upgrade.md)) |
 
 ### 프론트엔드
 | 파일 | 역할 |
@@ -73,11 +73,11 @@ LLM이 `@Tool`로 기존 실거래가 DB를 조회해 답한다. 기반: 사내 
 AI 로그의 허용 데이터와 환경별 활성화 절차는 [AI 챗봇 로그 및 개인정보 보호 정책](2026-06-21-ai-logging-privacy-policy.md)을 따른다.
 
 ## 4. 알려진 이슈 / 남은 일
-- ✅ [ISSUE: 시드 데이터 더블 인코딩](../_shared/issues/2026-06-21-seed-data-double-encoding.md) — **resolved**(`data.sql` `SET NAMES utf8mb4;` + DB 재초기화). 이름표시·구/동 검색 동시 정상화.
-- ⚠️ [ISSUE: 운영 환경 보안 설정 fail-open (JWT/쿠키)](../_shared/issues/2026-06-21-prod-jwt-fail-closed.md) — `open`(보안, 챗봇 범위 밖). 운영 프로필 fail-closed 제안만 기록.
-- ⚠️ [ISSUE: 프론트 컴포넌트(DOM) 테스트 인프라 부재](../_shared/issues/2026-06-21-frontend-component-test-infra.md) — `open`(후속, Vitest 도입 팀 합의 필요).
+- ✅ [ISSUE: 시드 데이터 더블 인코딩](../../_shared/issues/2026-06-21-seed-data-double-encoding.md) — **resolved**(`data.sql` `SET NAMES utf8mb4;` + DB 재초기화). 이름표시·구/동 검색 동시 정상화.
+- ⚠️ [ISSUE: 운영 환경 보안 설정 fail-open (JWT/쿠키)](../../_shared/issues/2026-06-21-prod-jwt-fail-closed.md) — `open`(보안, 챗봇 범위 밖). 운영 프로필 fail-closed 제안만 기록.
+- ⚠️ [ISSUE: 프론트 컴포넌트(DOM) 테스트 인프라 부재](../../_shared/issues/2026-06-21-frontend-component-test-infra.md) — `open`(후속, Vitest 도입 팀 합의 필요).
 - ☐ Phase 5: 대화기억(용도 C) — `FWA_03_AI_lab`의 `MessageWindowChatMemory` 패턴 차용 예정.
 
 ## 5. 트러블슈팅 기록 (종류별)
-- [버전업 이슈](../_shared/troubleshooting/2026-06-21-version-upgrade.md) — Spring Boot 3.5 전환
-- [AI 응답/프롬프트](troubleshooting/2026-06-21-ai-prompt-and-hallucination.md) — "환각"처럼 보인 인코딩 문제
+- [버전업 이슈](../../_shared/troubleshooting/2026-06-21-version-upgrade.md) — Spring Boot 3.5 전환
+- [AI 응답/프롬프트](../troubleshooting/2026-06-21-ai-prompt-and-hallucination.md) — "환각"처럼 보인 인코딩 문제

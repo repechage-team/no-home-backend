@@ -7,7 +7,7 @@ author: 이정헌
 created: 2026-06-21
 updated: 2026-06-21
 related:
-  - ../../ai-chatbot/2026-06-21-proposal.md
+  - ../../ai-chatbot/proposals/2026-06-21-proposal.md
 ---
 
 # 트러블슈팅: Spring Boot 3.3.5 → 3.5.9 버전업

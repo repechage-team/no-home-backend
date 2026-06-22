@@ -8,8 +8,8 @@ author: 이정헌
 created: 2026-06-21
 updated: 2026-06-21
 related:
-  - ../../ai-chatbot/2026-06-21-backlog.md
-  - ../../ai-chatbot/2026-06-21-implementation.md
+  - ../../ai-chatbot/backlog/2026-06-21-backlog.md
+  - ../../ai-chatbot/reports/2026-06-21-implementation.md
 ---
 
 # ISSUE: 프론트 컴포넌트(DOM) 테스트 인프라 부재
