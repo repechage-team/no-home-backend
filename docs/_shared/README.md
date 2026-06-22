@@ -23,6 +23,7 @@ updated: 2026-06-21
 - [2026-06-21 시드 데이터 더블 인코딩](issues/2026-06-21-seed-data-double-encoding.md) — `status: resolved`
 
 ## 트러블슈팅 (troubleshooting/)
+- [2026-06-22 로컬 full-stack · 디렉터리 · 한글 인코딩 함정](troubleshooting/2026-06-22-local-fullstack-and-encoding.md)
 - [2026-06-21 Spring Boot 3.5 버전업](troubleshooting/2026-06-21-version-upgrade.md)
 
 ## 의사결정 (adr/)
