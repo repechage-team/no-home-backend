@@ -20,6 +20,7 @@ updated: 2026-06-22
 - [2026-06-21 AI 챗봇 로그 및 개인정보 보호 정책](reports/2026-06-21-ai-logging-privacy-policy.md) — `type: report`
 - [2026-06-21 사용량 리미터 및 UX 사용자 시나리오](reports/2026-06-21-usage-limiter-ux-scenarios.md) — `type: report`
 - [2026-06-21 구현 & E2E 검증 정리](reports/2026-06-21-implementation.md) — `type: report`
+- [2026-06-22 AI 에이전트 모드 제안 (페이지 조작)](proposals/2026-06-22-agent-mode.md) — `type: proposal`, `status: draft` (팀 논의용)
 - [2026-06-21 도입 제안 & 버전업 협의](proposals/2026-06-21-proposal.md) — `type: proposal`, 팀 합의 완료
 
 ## 트러블슈팅 (troubleshooting/)
