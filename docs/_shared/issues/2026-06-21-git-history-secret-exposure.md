@@ -8,7 +8,7 @@ author: 이정헌
 created: 2026-06-21
 updated: 2026-06-21
 related:
-  - ../../ai-chatbot/2026-06-21-backlog.md
+  - ../../ai-chatbot/backlog/2026-06-21-backlog.md
 ---
 
 # ISSUE: Git 이력의 비밀정보 및 생성 파일 잔존

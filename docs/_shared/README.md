@@ -13,7 +13,7 @@ updated: 2026-06-21
 ## 메타 / 규칙
 - [문서 작성 가이드](guide/documentation-guide.md)
 - 템플릿: [document](templates/document-template.md) · [issue](templates/issue-template.md) · [troubleshooting](templates/troubleshooting-template.md) · [adr](templates/adr-template.md)
-- [문서 규약/위치 전략 — 결정 대기](2026-06-21-docs-strategy-and-onboarding-context.md) — `status: open` (새 팀 결정 안건)
+- [문서 규약/위치 전략 — 결정 대기](reports/2026-06-21-docs-strategy-and-onboarding-context.md) — `status: open` (새 팀 결정 안건)
 
 ## 이슈 (issues/)
 - [2026-06-21 Git 이력의 비밀정보 및 생성 파일 잔존](issues/2026-06-21-git-history-secret-exposure.md) — `status: in-progress`, `severity: high`

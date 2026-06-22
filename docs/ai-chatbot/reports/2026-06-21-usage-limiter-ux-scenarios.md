@@ -8,7 +8,7 @@ created: 2026-06-21
 updated: 2026-06-21
 related:
   - 2026-06-21-implementation.md
-  - 2026-06-21-backlog.md
+  - ../backlog/2026-06-21-backlog.md
 ---
 
 # AI 챗봇 사용량 리미터 및 UX 사용자 시나리오
@@ -214,4 +214,4 @@ flowchart TD
 - 프론트 컴포넌트 테스트 3건 통과.
 - 프론트 프로덕션 빌드 통과.
 
-상세 구현·E2E 결과는 [AI 챗봇 구현 & E2E 검증 정리](2026-06-21-implementation.md), 후속 작업은 [AI 챗봇 남은 작업 백로그](2026-06-21-backlog.md)를 참고한다.
+상세 구현·E2E 결과는 [AI 챗봇 구현 & E2E 검증 정리](2026-06-21-implementation.md), 후속 작업은 [AI 챗봇 남은 작업 백로그](../backlog/2026-06-21-backlog.md)를 참고한다.

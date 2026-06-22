@@ -7,7 +7,7 @@ author: 이정헌
 created: 2026-06-22
 updated: 2026-06-22
 related:
-  - ../2026-06-21-backlog.md
+  - ../backlog/2026-06-21-backlog.md
   - 2026-06-21-ai-prompt-and-hallucination.md
 ---
 
