@@ -83,7 +83,7 @@ AI_CHAT_RATE_LIMIT_ENABLED=true
 - `DB_PASSWORD`: DB 비밀번호
 - `PUBLIC_DATA_SERVICE_KEY`: 공공데이터 아파트 매매 실거래가 API key
 - `KAKAO_MAP_API_KEY`: Kakao API key
-- `SSAFY_GMS_API_KEY`: AI 챗봇용 SSAFY GMS(OpenAI 프록시) API key
+- `SSAFY_GMS_API_KEY`: AI 챗봇용 SSAFY GMS(OpenAI 프록시) API key. 미설정 시 앱은 정상 기동되고 `/api/ai/chat`만 503(챗봇 비활성), 무효/만료 키는 호출 시 런타임 503
 - `AI_CHAT_RATE_LIMIT_ENABLED`: AI 챗봇 호출 리미터(분당 한도 429·동시요청 409). 기본 `true`, 내부 테스트 시 `false`로 우회. (AI 챗봇 관련 추가 옵션은 `.env.example` 참고)
 
 `.env`는 로컬 비밀값을 포함할 수 있으므로 원격 저장소에 커밋하지 않습니다.

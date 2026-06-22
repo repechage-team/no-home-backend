@@ -5,16 +5,20 @@ import com.ssafy.home.ai.tool.HouseTools;
 import com.ssafy.home.common.response.ApiResponse;
 import com.ssafy.home.member.auth.AuthenticatedMember;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.net.SocketTimeoutException;
 import java.net.http.HttpTimeoutException;
@@ -27,8 +31,12 @@ import java.util.concurrent.TimeoutException;
 @RequestMapping("/api/ai")
 public class AiChatController {
 
+    private static final Logger log = LoggerFactory.getLogger(AiChatController.class);
+
     private static final String TIMEOUT_MESSAGE = "AI 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.";
     private static final String UNAVAILABLE_MESSAGE = "AI 서비스에 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+    private static final String AUTH_FAILURE_MESSAGE = "AI 서비스 인증에 문제가 있어 답변할 수 없습니다. 잠시 후 다시 시도해주세요.";
+    private static final String DISABLED_MESSAGE = "AI 챗봇이 현재 비활성화되어 있습니다. 관리자에게 문의해주세요.";
     private static final String RATE_LIMIT_MESSAGE = "AI 질문 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.";
     private static final String CONCURRENT_REQUEST_MESSAGE = "이미 답변을 생성하고 있습니다. 현재 답변이 끝난 뒤 다시 질문해주세요.";
 
@@ -49,7 +57,8 @@ public class AiChatController {
     private final int maxMessageLength;
 
     public AiChatController(
-            ChatClient chatClient,
+            // SSAFY_GMS_API_KEY 미설정 시 ChatClient 빈이 없으므로 null이 주입된다(앱은 정상 기동, 챗만 503).
+            @Nullable ChatClient chatClient,
             HouseTools houseTools,
             AiChatRateLimiter rateLimiter,
             @Value("${ai.chat.max-message-length:500}") int maxMessageLength
@@ -78,6 +87,11 @@ public class AiChatController {
         if (message.codePointCount(0, message.length()) > maxMessageLength) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.fail("message must be " + maxMessageLength + " characters or fewer.", null));
+        }
+
+        if (chatClient == null) {
+            // SSAFY_GMS_API_KEY 미설정으로 AI 챗봇 비활성화 상태(앱 자체는 정상 기동).
+            return failure(HttpStatus.SERVICE_UNAVAILABLE, DISABLED_MESSAGE);
         }
 
         Long memberId = currentMemberId(httpRequest);
@@ -111,9 +125,15 @@ public class AiChatController {
 
             return ResponseEntity.ok(ApiResponse.ok(answer));
         } catch (RuntimeException exception) {
-            return isTimeout(exception)
-                    ? failure(HttpStatus.GATEWAY_TIMEOUT, TIMEOUT_MESSAGE)
-                    : failure(HttpStatus.SERVICE_UNAVAILABLE, UNAVAILABLE_MESSAGE);
+            if (isTimeout(exception)) {
+                return failure(HttpStatus.GATEWAY_TIMEOUT, TIMEOUT_MESSAGE);
+            }
+            if (isAuthFailure(exception)) {
+                // 키가 무효/만료된 경우(런타임 401/403). secret·공급자 응답 본문은 로그에 남기지 않는다.
+                log.warn("AI provider authentication failed — SSAFY_GMS_API_KEY may be invalid or expired.");
+                return failure(HttpStatus.SERVICE_UNAVAILABLE, AUTH_FAILURE_MESSAGE);
+            }
+            return failure(HttpStatus.SERVICE_UNAVAILABLE, UNAVAILABLE_MESSAGE);
         } finally {
             rateLimiter.release(memberId);
         }
@@ -138,6 +158,36 @@ public class AiChatController {
                     || current instanceof SocketTimeoutException
                     || current instanceof HttpTimeoutException) {
                 return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * 공급자 인증 실패(키 무효/만료)로 보이는지 판별한다 — HTTP 401/403 또는 인증 관련 표식.
+     * 메시지 원문을 응답·로그에 노출하지 않고 분류 용도로만 사용한다.
+     */
+    private static boolean isAuthFailure(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof HttpClientErrorException httpError) {
+                int code = httpError.getStatusCode().value();
+                if (code == 401 || code == 403) {
+                    return true;
+                }
+            }
+            String message = current.getMessage();
+            if (message != null) {
+                String lower = message.toLowerCase();
+                if (lower.contains("401") || lower.contains("403")
+                        || lower.contains("unauthorized")
+                        || lower.contains("invalid_api_key")
+                        || lower.contains("incorrect api key")
+                        || lower.contains("expired")
+                        || lower.contains("authentication")) {
+                    return true;
+                }
             }
             current = current.getCause();
         }
