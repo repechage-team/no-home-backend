@@ -6,6 +6,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -21,7 +22,10 @@ import org.springframework.core.Ordered;
 @Configuration
 public class AiConfig {
 
+    // SSAFY_GMS_API_KEY 미설정 시 EnvironmentPostProcessor가 app.ai.chat.available=false로 내려
+    // 이 빈을 만들지 않는다(자동구성도 비활성). 키가 있으면 matchIfMissing으로 정상 생성된다.
     @Bean
+    @ConditionalOnProperty(name = "app.ai.chat.available", havingValue = "true", matchIfMissing = true)
     public ChatClient chatClient(
             ChatClient.Builder builder,
             @Value("${ai.chat.logging.diagnostics-enabled:false}") boolean diagnosticsEnabled
