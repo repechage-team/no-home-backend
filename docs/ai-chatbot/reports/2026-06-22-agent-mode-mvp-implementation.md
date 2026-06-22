@@ -80,5 +80,5 @@ related:
 - Chrome MCP가 조직 정책으로 `localhost`/`127.0.0.1` 차단 → **Claude Preview MCP 자체 브라우저**로 실제 화면 검증.
 
 ## 9. 현재 상태 / 후속
-- 코드는 **미커밋**(두 레포 `feature/jeongheon-agent-mode` 브랜치 워킹트리). 커밋/푸시/PR 범위는 사용자 지시 대기 중.
-- 후속: ① 커밋·푸시·PR(백엔드→프론트 순) ② **Phase 2**(paginate·mapFocus·selectItem + sort·umdNm·price) ③ (선택) `isTimeout`/`isAuthFailure` 중복을 `AiProviderErrors`로 추출 ④ (선택) `ai.agent.enabled` 독립 kill-switch.
+- **머지 완료** — backend [#16](https://github.com/repechage-team/no-home-backend/pull/16) · frontend [#5](https://github.com/repechage-team/no-home-frontend/pull/5) (양 레포 master 반영, fast-forward).
+- 후속: ① **Phase 2**(paginate·mapFocus·selectItem + sort·umdNm·price) ② (선택) `isTimeout`/`isAuthFailure` 중복을 `AiProviderErrors`로 추출 ③ (선택) `ai.agent.enabled` 독립 kill-switch.
