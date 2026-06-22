@@ -16,6 +16,7 @@ updated: 2026-06-21
 - [문서 규약/위치 전략 — 결정 대기](reports/2026-06-21-docs-strategy-and-onboarding-context.md) — `status: open` (새 팀 결정 안건)
 
 ## 이슈 (issues/)
+- [2026-06-22 자동 임포트 오류 원인 미구분 (resultCode 미파싱)](issues/2026-06-22-autoimport-error-categorization.md) — `status: open`, `severity: medium` (publicdata/house 담당)
 - [2026-06-21 Git 이력의 비밀정보 및 생성 파일 잔존](issues/2026-06-21-git-history-secret-exposure.md) — `status: in-progress`, `severity: high`
 - [2026-06-21 운영 환경 보안 설정 fail-open (JWT/쿠키)](issues/2026-06-21-prod-jwt-fail-closed.md) — `status: open`, `severity: high`
 - [2026-06-21 프론트 컴포넌트(DOM) 테스트 인프라 부재](issues/2026-06-21-frontend-component-test-infra.md) — `status: open`, `severity: low`
