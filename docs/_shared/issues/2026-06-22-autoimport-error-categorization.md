@@ -43,5 +43,5 @@ data.go.kr은 **HTTP 200 본문의 결과코드**로 오류를 반환한다: `30
 `publicdata/client/PublicDataAptTradeXmlParser`, `publicdata/client/PublicDataAptTradeClient`, `publicdata/service/PublicDataImportService`, `house/service/HouseService`(`ensureCoverage`), `house/service/AutoImportException`, `ai/tool/HouseTools`, `house/controller/HouseController`.
 
 ## 참고
-- GitHub 이슈: (생성 후 링크 추가) — `repechage-team/no-home-backend`.
+- GitHub 이슈: [repechage-team/no-home-backend#9](https://github.com/repechage-team/no-home-backend/issues/9).
 - 연관: 챗봇의 자동 임포트 폴백은 현재 친화 문자열로 처리됨([2026-06-22 백로그](../../ai-chatbot/backlog/2026-06-22-backlog.md) 참고).
