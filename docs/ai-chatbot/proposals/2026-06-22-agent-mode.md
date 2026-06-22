@@ -2,16 +2,19 @@
 title: "AI 에이전트 모드 제안 — 페이지 조작(검색 자동 실행)"
 domain: ai-chatbot
 type: proposal
-status: draft
+status: implemented-mvp
 author: 이정헌
 created: 2026-06-22
 updated: 2026-06-22
 related:
+  - ../reports/2026-06-22-agent-mode-mvp-implementation.md
   - ../backlog/2026-06-22-backlog.md
   - 2026-06-21-proposal.md
 ---
 
 # 제안: AI 에이전트 모드 (페이지 조작)
+
+> ✅ **MVP 구현 완료 (2026-06-22)** — 핵심 4종 액션(`search·setFilters·reset·clarify`) + 지역·날짜·아파트명 필터로 구현·검증됨. 상세·검증 결과는 [구현 리포트](../reports/2026-06-22-agent-mode-mvp-implementation.md). 본 제안서는 **설계 근거 보존용**이며, 시나리오 S6(지도/항목)·S5 일부(페이지)·가격/정렬은 **Phase 2 잔여**다.
 
 ## 배경 / 목표
 기존 챗봇은 **질문(Q&A) 모드**(텍스트 답변)로 유지하고, **에이전트(실행) 모드**를 추가한다.
@@ -72,10 +75,10 @@ related:
 | S11 권한 밖 | "내 계정 탈퇴해줘" | 거부 | 읽기/탐색만(회원 write 제외) |
 | S12 비로그인 | (대화 시도) | — | "로그인 후 이용" |
 
-## 구현 메모 (후속)
-- 백엔드: `AgentCommand` 구조화 출력 + 프롬프트(capability·UI상태 주입), 지역/연월 가드 재사용, 모호 시 `clarify`.
-- 프론트: 모드 토글 UI, `filterSchema`(capabilities) 단일 정의, `@agent-action` 핸들러(액션→메서드 매핑), 사후 보고 메시지.
-- 테스트: 명령 파싱/매핑(순수 로직)·액션 핸들러·시나리오 S1~S12.
+## 구현 메모 (→ MVP 구현됨, [리포트](../reports/2026-06-22-agent-mode-mvp-implementation.md) 참조)
+- 백엔드: `AgentCommand` 구조화 출력 + 프롬프트(capability·UI상태 주입), 지역/연월 가드 재사용, 모호 시 `clarify`. ✅ 구현됨(`ai/agent/*`, `AiAgentController`).
+- 프론트: 모드 토글 UI, `filterSchema`(capabilities) 단일 정의, `agent-command` 핸들러(액션→메서드 매핑), 사후 보고 메시지. ✅ 구현됨(`houseSearchParams.js`·`agentClient.js`·`ChatWidget.vue`·`App.vue`).
+- 테스트: 명령 파싱/매핑(순수 로직)·가드. ✅ 백엔드 105 / 프론트 28 그린 + API E2E 9/9 + 브라우저 스크린샷 검증. (시나리오 S6·페이지·가격/정렬은 Phase 2 잔여.)
 
 ## 미결 / 결정
 - **확정**: 자동 실행+사후 보고 / 액션 확장(지도·항목선택 포함) / 신규 `/api/ai/agent` / 메모리와 직교 / capability-driven 비결합.
