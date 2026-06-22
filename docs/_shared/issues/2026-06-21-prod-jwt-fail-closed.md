@@ -2,11 +2,11 @@
 title: 운영 환경 보안 설정 fail-open (JWT secret / 쿠키 Secure)
 domain: _shared
 type: issue
-status: open
+status: resolved
 severity: high
 author: 이정헌
 created: 2026-06-21
-updated: 2026-06-21
+updated: 2026-06-22
 related:
   - ../../ai-chatbot/2026-06-21-backlog.md
 ---
@@ -53,7 +53,14 @@ related:
 - 기본 프로필(로컬/CI 스모크) 무영향, 전체 테스트 통과.
 - 로그/예외 어디에도 secret 값이 노출되지 않음.
 
+## ✅ 해결 (2026-06-22) — 브랜치 `feature/jeongheon-jwt-fail-closed`
+이슈 설계대로 구현·검증 완료(로컬). 기본/로컬 무설정 기동은 보존.
+- `src/main/resources/application-prod.properties`: `auth.jwt.secret=${JWT_SECRET}`(fallback 제거), `auth.jwt.cookie-secure=${JWT_COOKIE_SECURE:true}`.
+- `common/config/ProductionSecurityValidator`(`@Profile("prod")`, `InitializingBean`): 개발 기본값(`local-development`/`change-me`)·32자 미만·`cookie-secure=false`면 `IllegalStateException`으로 기동 차단(fail-closed). 예외 메시지에 secret 미포함.
+- `ProductionSecurityValidatorTest` 4케이스 통과(전체 백엔드 82건 그린).
+- 검증: 정적 `validate()` 단위테스트 + 기본 프로필 컨텍스트 부팅 무영향(@Profile prod라 미적용).
+
 ## 상태 / 메모
-- **상태:** open. 현재 챗봇 작업 범위 밖으로 분리.
-- **범위 제외:** 키 교체, Git 이력 재작성/force push(별도 승인 필요).
+- **상태:** resolved(구현·테스트 완료, 로컬). **push/머지는 보안 동결 해제 후**(별도 브랜치 `feature/jeongheon-jwt-fail-closed`).
+- **범위 제외:** 키 교체(이번 세션 별도 완료), Git 이력 재작성/force push(별도 승인 필요).
 - 키 노출 이력 관련은 [Git 이력 비밀정보 잔존](2026-06-21-git-history-secret-exposure.md) 참조.
