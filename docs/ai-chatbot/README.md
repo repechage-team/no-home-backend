@@ -3,7 +3,7 @@ title: ai-chatbot 도메인 문서 인덱스
 domain: ai-chatbot
 type: index
 status: living
-updated: 2026-06-21
+updated: 2026-06-22
 ---
 
 # ai-chatbot — AI 챗봇 (서울 아파트 실거래가 질의)
@@ -22,6 +22,7 @@ updated: 2026-06-21
 - [2026-06-21 도입 제안 & 버전업 협의](2026-06-21-proposal.md) — `type: proposal`, 팀 합의 완료
 
 ## 트러블슈팅 (troubleshooting/)
+- [2026-06-22 '서울' 미접두 자치구를 서울 외로 선판단해 거부](troubleshooting/2026-06-22-ai-region-prejudgment-refusal.md)
 - [2026-06-21 'AI 환각'처럼 보인 인코딩 문제](troubleshooting/2026-06-21-ai-prompt-and-hallucination.md)
 
 ## 관련 (교차)
