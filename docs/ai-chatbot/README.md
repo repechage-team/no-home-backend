@@ -27,4 +27,5 @@ updated: 2026-06-22
 
 ## 관련 (교차)
 - [ISSUE: 시드 데이터 더블 인코딩](../_shared/issues/2026-06-21-seed-data-double-encoding.md)
+- [ISSUE: 프론트 App.vue 한글 문자열 mojibake](../_shared/issues/2026-06-22-frontend-app-vue-mojibake-strings.md)
 - [버전업 트러블슈팅](../_shared/troubleshooting/2026-06-21-version-upgrade.md)
