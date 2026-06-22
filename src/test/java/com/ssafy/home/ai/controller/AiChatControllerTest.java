@@ -76,6 +76,38 @@ class AiChatControllerTest {
     }
 
     @Test
+    void returnsServiceUnavailableWhenChatClientMissing() {
+        // SSAFY_GMS_API_KEY 미설정 → ChatClient 빈 없음(null 주입). 챗봇 비활성, 503.
+        AiChatController disabled = new AiChatController(null, houseTools, rateLimiter, 500);
+
+        ResponseEntity<ApiResponse<String>> response = disabled.chat(
+                new AiChatController.ChatRequest("동작구 실거래가 알려줘"), null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().success()).isFalse();
+        assertThat(response.getBody().message()).contains("비활성화");
+        verifyNoInteractions(rateLimiter);
+    }
+
+    @Test
+    void returnsAuthFailureWhenProviderRejectsKey() {
+        // 키가 무효/만료된 런타임 401 → 인증 실패로 분류, 503 + secret 미노출.
+        HttpServletRequest httpRequest = authenticatedRequest(1L);
+        ChatClient.ChatClientRequestSpec requestSpec = requestSpec();
+        when(requestSpec.call()).thenThrow(new RuntimeException("401 Unauthorized: invalid_api_key"));
+
+        ResponseEntity<ApiResponse<String>> response = controller.chat(
+                new AiChatController.ChatRequest("질문"), httpRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message())
+                .contains("인증")
+                .doesNotContain("invalid_api_key");
+    }
+
+    @Test
     void returnsServiceUnavailableWithoutLeakingModelFailure() {
         HttpServletRequest httpRequest = authenticatedRequest(1L);
         ChatClient.ChatClientRequestSpec requestSpec = requestSpec();
