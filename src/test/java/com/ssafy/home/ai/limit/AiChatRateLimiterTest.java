@@ -53,6 +53,22 @@ class AiChatRateLimiterTest {
     }
 
     @Test
+    void bypassesAllLimitsWhenDisabled() {
+        MutableClock clock = new MutableClock(Instant.parse("2026-06-21T00:00:00Z"));
+        AiChatRateLimiter limiter = new AiChatRateLimiter(false, 1, Duration.ofMinutes(1), clock);
+
+        // release 없이 반복 호출해도 분당 한도(1개)·동시요청 제한에 걸리지 않는다.
+        for (int i = 0; i < 5; i++) {
+            AiChatRateLimiter.Decision decision = limiter.acquire(1L);
+            assertThat(decision.allowed()).isTrue();
+            assertThat(decision.reason()).isEqualTo(AiChatRateLimiter.RejectionReason.NONE);
+        }
+
+        // memberId가 없어도 비활성화 상태에서는 허용한다.
+        assertThat(limiter.acquire(null).allowed()).isTrue();
+    }
+
+    @Test
     void rejectsConcurrentRequestWithoutConsumingAnotherToken() {
         MutableClock clock = new MutableClock(Instant.parse("2026-06-21T00:00:00Z"));
         AiChatRateLimiter limiter = new AiChatRateLimiter(2, Duration.ofMinutes(1), clock);
