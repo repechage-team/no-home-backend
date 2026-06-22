@@ -63,7 +63,7 @@ public class HouseController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(e.getMessage(), null));
         } catch (AutoImportException e) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+            return ResponseEntity.status(autoImportStatus(e))
                     .body(ApiResponse.fail(e.getMessage(), null));
         }
     }
@@ -88,9 +88,17 @@ public class HouseController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(e.getMessage(), null));
         } catch (AutoImportException e) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+            return ResponseEntity.status(autoImportStatus(e))
                     .body(ApiResponse.fail(e.getMessage(), null));
         }
+    }
+
+    private static HttpStatus autoImportStatus(AutoImportException exception) {
+        return switch (exception.reason()) {
+            case KEY_MISSING, KEY_INVALID, QUOTA -> HttpStatus.SERVICE_UNAVAILABLE;
+            case TIMEOUT -> HttpStatus.GATEWAY_TIMEOUT;
+            case PROVIDER_ERROR, UNKNOWN -> HttpStatus.BAD_GATEWAY;
+        };
     }
 
     @GetMapping("/house-deals")

@@ -74,9 +74,8 @@ public class HouseTools {
         } catch (AutoImportException e) {
             // 외부 공공데이터 임포트 지연/실패는 장애가 아니라 데이터 소스 일시 문제로 보고,
             // 503 대신 사용자 친화 폴백 문자열을 반환한다(예외 상세는 응답·로그에 노출하지 않음).
-            log.debug("House tool auto-import fallback returned for a resolved region/dealYmd request");
-            return "해당 조건의 실거래가를 공공데이터에서 불러오지 못했어요. 일시적인 지연이나 오류일 수 있으니 잠시 후 다시 시도해 주세요. (구=%s, 거래연월=%s)"
-                    .formatted(nv(sigungu), nv(dealYmd));
+            log.debug("House tool auto-import fallback returned: reason={}", e.reason());
+            return autoImportFallbackMessage(e.reason(), sigungu, dealYmd);
         } catch (RuntimeException e) {
             throw new HouseToolException("House deal lookup failed", e);
         }
@@ -135,6 +134,20 @@ public class HouseTools {
         log.debug("House tool completed: totalCount={}, sampleCount={}, pricedCount={}, truncated={}",
                 result.totalCount(), items.size(), priced.size(), result.totalCount() > items.size());
         return summary;
+    }
+
+    private static String autoImportFallbackMessage(AutoImportException.Reason reason, String sigungu, String dealYmd) {
+        String suffix = " (구=%s, 거래연월=%s)".formatted(nv(sigungu), nv(dealYmd));
+        return switch (reason) {
+            case KEY_MISSING, KEY_INVALID ->
+                    "공공데이터 서비스키 설정 또는 유효기간을 확인해야 해서 실거래가 자동 갱신을 완료하지 못했습니다." + suffix;
+            case QUOTA ->
+                    "공공데이터 호출 한도를 초과해서 실거래가 자동 갱신을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요." + suffix;
+            case TIMEOUT ->
+                    "공공데이터 응답이 지연되어 실거래가 자동 갱신을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요." + suffix;
+            case PROVIDER_ERROR, UNKNOWN ->
+                    "공공데이터 제공처 응답 문제로 실거래가 자동 갱신을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요." + suffix;
+        };
     }
 
     private static String formatManwon(long manwon) {

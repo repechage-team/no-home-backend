@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class PublicDataImportServiceTest {
 
@@ -68,6 +69,47 @@ class PublicDataImportServiceTest {
         assertThat(mapper.insertDealAttempts).isEqualTo(2);
     }
 
+    @Test
+    void importKeepsSuccessfulZeroRowsAsNoData() {
+        StubMapper mapper = new StubMapper();
+        PublicDataImportService service = newService(mapper, """
+                <response>
+                  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+                  <body><totalCount>0</totalCount><items></items></body>
+                </response>
+                """);
+
+        PublicDataImportResult result = service.importAptTrades("11590", "202405");
+
+        assertThat(result.status()).isEqualTo("success");
+        assertThat(result.totalCount()).isZero();
+        assertThat(result.importedCount()).isZero();
+        assertThat(result.skippedCount()).isZero();
+        assertThat(mapper.successBatchTotalCount).isZero();
+        assertThat(mapper.failedBatchCount).isZero();
+    }
+
+    @Test
+    void importThrowsCategorizedExceptionWhenApiReturnsServiceKeyError() {
+        StubMapper mapper = new StubMapper();
+        PublicDataImportService service = newService(mapper, """
+                <response>
+                  <header>
+                    <resultCode>30</resultCode>
+                    <resultMsg>SERVICE KEY IS NOT REGISTERED ERROR.</resultMsg>
+                  </header>
+                  <body><totalCount>0</totalCount><items></items></body>
+                </response>
+                """);
+
+        Throwable thrown = catchThrowable(() -> service.importAptTrades("11590", "202405"));
+
+        assertThat(thrown).isInstanceOf(PublicDataApiException.class);
+        assertThat(((PublicDataApiException) thrown).reason()).isEqualTo(PublicDataApiException.Reason.KEY_INVALID);
+        assertThat(mapper.failedBatchCount).isEqualTo(1);
+        assertThat(mapper.lastFailureMessage).contains("resultCode=30");
+    }
+
     private static PublicDataImportService newService(StubMapper mapper, String xml) {
         return newService(mapper, Map.of(1, xml));
     }
@@ -110,6 +152,8 @@ class PublicDataImportServiceTest {
         private int requestedBatchCount;
         private int insertDealAttempts;
         private int successBatchTotalCount;
+        private int failedBatchCount;
+        private String lastFailureMessage;
         private final Set<String> hashes = new HashSet<>();
 
         @Override
@@ -129,6 +173,8 @@ class PublicDataImportServiceTest {
 
         @Override
         public void updateBatchFailed(String sourceApi, String lawdCd, String dealYmd, String houseType, String dealType, String errorMessage) {
+            failedBatchCount++;
+            lastFailureMessage = errorMessage;
         }
 
         @Override

@@ -14,10 +14,15 @@ import com.ssafy.home.house.dto.ImportBatchResponse;
 import com.ssafy.home.house.dto.RegionResponse;
 import com.ssafy.home.house.mapper.HouseMapper;
 import com.ssafy.home.publicdata.dto.PublicDataImportResult;
+import com.ssafy.home.publicdata.service.PublicDataApiException;
 import com.ssafy.home.publicdata.service.PublicDataImportService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 
+import java.net.SocketTimeoutException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,6 +39,7 @@ import static com.ssafy.home.publicdata.service.AptTradeImportCommandFactory.SOU
 @Service
 public class HouseService {
 
+    private static final Logger log = LoggerFactory.getLogger(HouseService.class);
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
@@ -281,8 +287,12 @@ public class HouseService {
                 PublicDataImportResult result = publicDataImportService.importAptTrades(lawdCd, condition.dealYmd());
                 importedRanges.add(new AutoImportRangeResponse(lawdCd, condition.dealYmd(), result.status(), result.message()));
             } catch (RuntimeException exception) {
-                throw new AutoImportException("Auto import failed for lawdCd=" + lawdCd
-                        + ", dealYmd=" + condition.dealYmd(), exception);
+                AutoImportException.Reason reason = classifyAutoImportFailure(exception);
+                log.warn("Auto import failed: reason={}, lawdCd={}, dealYmd={}",
+                        reason, lawdCd, condition.dealYmd());
+                throw new AutoImportException(reason,
+                        "Auto import failed for lawdCd=" + lawdCd + ", dealYmd=" + condition.dealYmd(),
+                        exception);
             }
         }
         return new AutoImportMetadata(!importedRanges.isEmpty() || !skippedRanges.isEmpty(), importedRanges, skippedRanges);
@@ -300,6 +310,34 @@ public class HouseService {
             return false;
         }
         return hasText(condition.lawdCd()) || hasText(condition.sido());
+    }
+
+    private static AutoImportException.Reason classifyAutoImportFailure(RuntimeException exception) {
+        if (exception instanceof PublicDataApiException publicDataApiException) {
+            return switch (publicDataApiException.reason()) {
+                case KEY_INVALID -> AutoImportException.Reason.KEY_INVALID;
+                case QUOTA -> AutoImportException.Reason.QUOTA;
+                case PROVIDER_ERROR -> AutoImportException.Reason.PROVIDER_ERROR;
+            };
+        }
+        if (exception instanceof IllegalStateException) {
+            return AutoImportException.Reason.KEY_MISSING;
+        }
+        if (exception instanceof ResourceAccessException || hasCause(exception, SocketTimeoutException.class)) {
+            return AutoImportException.Reason.TIMEOUT;
+        }
+        return AutoImportException.Reason.PROVIDER_ERROR;
+    }
+
+    private static boolean hasCause(Throwable throwable, Class<? extends Throwable> causeType) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (causeType.isInstance(current)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     public Optional<ImportBatchResponse> findImportBatch(

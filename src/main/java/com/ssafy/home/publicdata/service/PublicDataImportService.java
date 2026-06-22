@@ -77,6 +77,7 @@ public class PublicDataImportService {
 
         while (true) {
             AptTradeApiResponse response = parser.parse(client.fetchXml(lawdCd, dealYmd, pageNo, PAGE_SIZE));
+            validateSuccess(response);
             if (pageNo == 1) {
                 totalCount = response.totalCount();
             }
@@ -94,6 +95,36 @@ public class PublicDataImportService {
         }
 
         return new ImportResult(totalCount, counters);
+    }
+
+    private static void validateSuccess(AptTradeApiResponse response) {
+        if (response.isSuccess()) {
+            return;
+        }
+
+        throw new PublicDataApiException(
+                classifyApiFailure(response.resultCode(), response.resultMsg()),
+                response.resultCode(),
+                response.resultMsg()
+        );
+    }
+
+    private static PublicDataApiException.Reason classifyApiFailure(String resultCode, String resultMsg) {
+        String code = resultCode == null ? "" : resultCode.trim();
+        String message = resultMsg == null ? "" : resultMsg.toLowerCase();
+
+        if ("22".equals(code) || message.contains("traffic") || message.contains("quota")) {
+            return PublicDataApiException.Reason.QUOTA;
+        }
+        if ("30".equals(code) || "31".equals(code)
+                || message.contains("service key")
+                || message.contains("servic key")
+                || message.contains("auth")
+                || message.contains("expired")
+                || message.contains("unregistered")) {
+            return PublicDataApiException.Reason.KEY_INVALID;
+        }
+        return PublicDataApiException.Reason.PROVIDER_ERROR;
     }
 
     private ImportCounters importItems(String lawdCd, String dealYmd, AptTradeApiResponse response) {

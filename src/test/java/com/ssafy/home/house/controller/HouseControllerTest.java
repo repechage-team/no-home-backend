@@ -3,6 +3,7 @@ package com.ssafy.home.house.controller;
 import com.ssafy.home.house.dto.HouseSearchPageResponse;
 import com.ssafy.home.house.dto.HouseSearchResultResponse;
 import com.ssafy.home.house.dto.HouseDealPriceRangeResponse;
+import com.ssafy.home.house.service.AutoImportException;
 import com.ssafy.home.house.service.HouseService;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -85,5 +86,45 @@ class HouseControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.minDealAmountManwon").value(100000))
                 .andExpect(jsonPath("$.data.maxDealAmountManwon").value(300000));
+    }
+
+    @Test
+    void searchHousesReturnsServiceUnavailableWhenAutoImportKeyFails() throws Exception {
+        HouseService houseService = mock(HouseService.class);
+        when(houseService.searchHouseDeals(
+                eq("11680"), eq(null), eq(null), eq(null), eq(null), eq("202605"),
+                eq(null), eq(null), eq(null), eq(null), eq(true), eq(null), eq(null), eq(null)
+        )).thenThrow(new AutoImportException(
+                AutoImportException.Reason.KEY_INVALID,
+                "Auto import failed for lawdCd=11680, dealYmd=202605",
+                new RuntimeException("provider code 30")
+        ));
+        MockMvc mockMvc = standaloneSetup(new HouseController(houseService)).build();
+
+        mockMvc.perform(get("/api/houses/search")
+                        .param("lawdCd", "11680")
+                        .param("dealYmd", "202605"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void priceRangeReturnsGatewayTimeoutWhenAutoImportTimesOut() throws Exception {
+        HouseService houseService = mock(HouseService.class);
+        when(houseService.findHouseDealPriceRange(
+                eq("11680"), eq(null), eq(null), eq(null), eq(null), eq("202605"),
+                eq(null), eq(null), eq(true)
+        )).thenThrow(new AutoImportException(
+                AutoImportException.Reason.TIMEOUT,
+                "Auto import failed for lawdCd=11680, dealYmd=202605",
+                new RuntimeException("timeout")
+        ));
+        MockMvc mockMvc = standaloneSetup(new HouseController(houseService)).build();
+
+        mockMvc.perform(get("/api/houses/price-range")
+                        .param("lawdCd", "11680")
+                        .param("dealYmd", "202605"))
+                .andExpect(status().isGatewayTimeout())
+                .andExpect(jsonPath("$.success").value(false));
     }
 }
