@@ -4,6 +4,7 @@ import com.ssafy.home.common.region.SeoulLawdCodeResolver;
 import com.ssafy.home.common.region.SeoulLegalDongCatalog;
 import com.ssafy.home.common.text.MojibakeRepairer;
 import com.ssafy.home.house.dto.AutoImportRangeResponse;
+import com.ssafy.home.house.dto.HouseDealPriceRangeResponse;
 import com.ssafy.home.house.dto.HouseDealResponse;
 import com.ssafy.home.house.dto.HouseResponse;
 import com.ssafy.home.house.dto.HouseSearchCondition;
@@ -13,10 +14,15 @@ import com.ssafy.home.house.dto.ImportBatchResponse;
 import com.ssafy.home.house.dto.RegionResponse;
 import com.ssafy.home.house.mapper.HouseMapper;
 import com.ssafy.home.publicdata.dto.PublicDataImportResult;
+import com.ssafy.home.publicdata.service.PublicDataApiException;
 import com.ssafy.home.publicdata.service.PublicDataImportService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 
+import java.net.SocketTimeoutException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,9 +39,11 @@ import static com.ssafy.home.publicdata.service.AptTradeImportCommandFactory.SOU
 @Service
 public class HouseService {
 
+    private static final Logger log = LoggerFactory.getLogger(HouseService.class);
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
+    private static final String DEFAULT_SORT = "latest";
     private static final Collator KOREAN_COLLATOR = Collator.getInstance(Locale.KOREAN);
 
     private final HouseMapper houseMapper;
@@ -108,15 +116,57 @@ public class HouseService {
             Integer size,
             Boolean autoImport
     ) {
+        return searchHouseDeals(lawdCd, sido, sigungu, umdNm, aptName, dealYmd, null, null, page, size, autoImport,
+                DEFAULT_SORT, null, null);
+    }
+
+    public HouseSearchPageResponse searchHouseDeals(
+            String lawdCd,
+            String sido,
+            String sigungu,
+            String umdNm,
+            String aptName,
+            String dealYmd,
+            String startDealYmd,
+            String endDealYmd,
+            Integer page,
+            Integer size,
+            Boolean autoImport,
+            String sort,
+            Integer minPrice,
+            Integer maxPrice
+    ) {
         int normalizedPage = normalizePage(page);
         int normalizedSize = normalizeSize(size);
+        String normalizedSort = normalizeSort(sort);
+        Integer normalizedMinPrice = normalizePrice(minPrice, "minPrice");
+        Integer normalizedMaxPrice = normalizePrice(maxPrice, "maxPrice");
+        if (normalizedMinPrice != null && normalizedMaxPrice != null && normalizedMinPrice > normalizedMaxPrice) {
+            throw new IllegalArgumentException("minPrice must be less than or equal to maxPrice.");
+        }
+        String normalizedDealYmd = trimToNull(dealYmd);
+        String normalizedStartDealYmd = trimToNull(startDealYmd);
+        String normalizedEndDealYmd = trimToNull(endDealYmd);
+        if (normalizedDealYmd != null) {
+            normalizedStartDealYmd = null;
+            normalizedEndDealYmd = null;
+        } else if (normalizedStartDealYmd != null && normalizedEndDealYmd != null
+                && normalizedStartDealYmd.compareTo(normalizedEndDealYmd) > 0) {
+            throw new IllegalArgumentException("startDealYmd must be less than or equal to endDealYmd.");
+        }
+
         HouseSearchCondition condition = new HouseSearchCondition(
                 trimToNull(lawdCd),
                 trimToNull(sido),
                 trimToNull(sigungu),
                 trimToNull(umdNm),
                 trimToNull(aptName),
-                trimToNull(dealYmd),
+                normalizedDealYmd,
+                normalizedStartDealYmd,
+                normalizedEndDealYmd,
+                normalizedSort,
+                normalizedMinPrice,
+                normalizedMaxPrice,
                 normalizedPage,
                 normalizedSize,
                 (normalizedPage - 1) * normalizedSize
@@ -133,10 +183,60 @@ public class HouseService {
                 pageResponse.page(),
                 pageResponse.size(),
                 pageResponse.totalCount(),
+                pageResponse.minDealAmountManwon(),
+                pageResponse.maxDealAmountManwon(),
                 autoImportMetadata.attempted,
                 autoImportMetadata.importedRanges,
                 autoImportMetadata.skippedRanges
         );
+    }
+
+    public HouseDealPriceRangeResponse findHouseDealPriceRange(
+            String lawdCd,
+            String sido,
+            String sigungu,
+            String umdNm,
+            String aptName,
+            String dealYmd,
+            String startDealYmd,
+            String endDealYmd,
+            Boolean autoImport
+    ) {
+        String normalizedDealYmd = trimToNull(dealYmd);
+        String normalizedStartDealYmd = trimToNull(startDealYmd);
+        String normalizedEndDealYmd = trimToNull(endDealYmd);
+        if (normalizedDealYmd != null) {
+            normalizedStartDealYmd = null;
+            normalizedEndDealYmd = null;
+        } else if (normalizedStartDealYmd != null && normalizedEndDealYmd != null
+                && normalizedStartDealYmd.compareTo(normalizedEndDealYmd) > 0) {
+            throw new IllegalArgumentException("startDealYmd must be less than or equal to endDealYmd.");
+        }
+
+        HouseSearchCondition condition = new HouseSearchCondition(
+                trimToNull(lawdCd),
+                trimToNull(sido),
+                trimToNull(sigungu),
+                trimToNull(umdNm),
+                trimToNull(aptName),
+                normalizedDealYmd,
+                normalizedStartDealYmd,
+                normalizedEndDealYmd,
+                DEFAULT_SORT,
+                null,
+                null,
+                DEFAULT_PAGE,
+                DEFAULT_SIZE,
+                0
+        );
+
+        if (!condition.hasSearchCondition()) {
+            throw new IllegalArgumentException("At least one search condition is required.");
+        }
+
+        ensureCoverage(condition, autoImport);
+        HouseDealPriceRangeResponse priceRange = houseMapper.selectHouseDealPriceRange(condition);
+        return priceRange == null ? new HouseDealPriceRangeResponse(null, null) : priceRange;
     }
 
     public List<String> resolveAutoImportLawdCds(String lawdCd, String sido, String sigungu) {
@@ -155,7 +255,11 @@ public class HouseService {
         List<HouseSearchResultResponse> items = totalCount == 0
                 ? List.of()
                 : houseMapper.searchHouseDeals(condition);
-        return new HouseSearchPageResponse(items, condition.page(), condition.size(), totalCount);
+        HouseDealPriceRangeResponse priceRange = houseMapper.selectHouseDealPriceRange(condition);
+        Integer minPrice = priceRange == null ? null : priceRange.minDealAmountManwon();
+        Integer maxPrice = priceRange == null ? null : priceRange.maxDealAmountManwon();
+        return new HouseSearchPageResponse(items, condition.page(), condition.size(), totalCount, minPrice, maxPrice,
+                false, List.of(), List.of());
     }
 
     private AutoImportMetadata ensureCoverage(HouseSearchCondition condition, Boolean autoImport) {
@@ -183,8 +287,12 @@ public class HouseService {
                 PublicDataImportResult result = publicDataImportService.importAptTrades(lawdCd, condition.dealYmd());
                 importedRanges.add(new AutoImportRangeResponse(lawdCd, condition.dealYmd(), result.status(), result.message()));
             } catch (RuntimeException exception) {
-                throw new AutoImportException("Auto import failed for lawdCd=" + lawdCd
-                        + ", dealYmd=" + condition.dealYmd(), exception);
+                AutoImportException.Reason reason = classifyAutoImportFailure(exception);
+                log.warn("Auto import failed: reason={}, lawdCd={}, dealYmd={}",
+                        reason, lawdCd, condition.dealYmd());
+                throw new AutoImportException(reason,
+                        "Auto import failed for lawdCd=" + lawdCd + ", dealYmd=" + condition.dealYmd(),
+                        exception);
             }
         }
         return new AutoImportMetadata(!importedRanges.isEmpty() || !skippedRanges.isEmpty(), importedRanges, skippedRanges);
@@ -202,6 +310,34 @@ public class HouseService {
             return false;
         }
         return hasText(condition.lawdCd()) || hasText(condition.sido());
+    }
+
+    private static AutoImportException.Reason classifyAutoImportFailure(RuntimeException exception) {
+        if (exception instanceof PublicDataApiException publicDataApiException) {
+            return switch (publicDataApiException.reason()) {
+                case KEY_INVALID -> AutoImportException.Reason.KEY_INVALID;
+                case QUOTA -> AutoImportException.Reason.QUOTA;
+                case PROVIDER_ERROR -> AutoImportException.Reason.PROVIDER_ERROR;
+            };
+        }
+        if (exception instanceof IllegalStateException) {
+            return AutoImportException.Reason.KEY_MISSING;
+        }
+        if (exception instanceof ResourceAccessException || hasCause(exception, SocketTimeoutException.class)) {
+            return AutoImportException.Reason.TIMEOUT;
+        }
+        return AutoImportException.Reason.PROVIDER_ERROR;
+    }
+
+    private static boolean hasCause(Throwable throwable, Class<? extends Throwable> causeType) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (causeType.isInstance(current)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     public Optional<ImportBatchResponse> findImportBatch(
@@ -223,6 +359,27 @@ public class HouseService {
             return DEFAULT_SIZE;
         }
         return Math.min(size, MAX_SIZE);
+    }
+
+    private static String normalizeSort(String sort) {
+        String normalized = trimToNull(sort);
+        if (normalized == null) {
+            return DEFAULT_SORT;
+        }
+        return switch (normalized) {
+            case "latest", "oldest", "priceDesc", "priceAsc" -> normalized;
+            default -> throw new IllegalArgumentException("Unsupported sort option: " + sort);
+        };
+    }
+
+    private static Integer normalizePrice(Integer price, String fieldName) {
+        if (price == null) {
+            return null;
+        }
+        if (price < 0) {
+            throw new IllegalArgumentException(fieldName + " must be greater than or equal to 0.");
+        }
+        return price;
     }
 
     private static String trimToNull(String value) {

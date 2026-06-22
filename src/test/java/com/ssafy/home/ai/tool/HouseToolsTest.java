@@ -181,12 +181,16 @@ class HouseToolsTest {
                 .thenReturn(List.of("11440"));
         when(houseService.searchHouseDeals(
                 "11440", null, null, null, null, "202403", 1, 100, true
-        )).thenThrow(new AutoImportException("public data import failed", new RuntimeException("upstream 503")));
+        )).thenThrow(new AutoImportException(
+                AutoImportException.Reason.QUOTA,
+                "public data import failed",
+                new RuntimeException("upstream 503")
+        ));
 
         String result = houseTools.searchSeoulAptDeals("마포구", null, null, "202403");
 
         assertThat(result)
-                .contains("공공데이터에서 불러오지 못했어요")
+                .contains("공공데이터 호출 한도")
                 .contains("다시 시도")
                 .contains("구=마포구")
                 .doesNotContain("public data import failed", "upstream 503");

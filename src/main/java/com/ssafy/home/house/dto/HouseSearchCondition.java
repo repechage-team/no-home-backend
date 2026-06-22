@@ -7,6 +7,11 @@ public record HouseSearchCondition(
         String umdNm,
         String aptName,
         String dealYmd,
+        String startDealYmd,
+        String endDealYmd,
+        String sort,
+        Integer minPrice,
+        Integer maxPrice,
         int page,
         int size,
         int offset
@@ -18,7 +23,9 @@ public record HouseSearchCondition(
                 || hasText(sigungu)
                 || hasText(umdNm)
                 || hasText(aptName)
-                || hasText(dealYmd);
+                || hasText(dealYmd)
+                || hasText(startDealYmd)
+                || hasText(endDealYmd);
     }
 
     private static boolean hasText(String value) {

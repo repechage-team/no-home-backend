@@ -23,7 +23,14 @@ public class PublicDataAptTradeXmlParser {
             factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
             factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
             Document document = factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
-            int totalCount = parseInt(text(document.getDocumentElement(), "totalCount"), 0);
+            Element root = document.getDocumentElement();
+            String resultCode = firstText(root, "resultCode");
+            String resultMsg = firstText(root, "resultMsg");
+            if (resultCode == null) {
+                resultCode = firstText(root, "returnReasonCode");
+                resultMsg = firstText(root, "returnAuthMsg");
+            }
+            int totalCount = parseInt(text(root, "totalCount"), 0);
             NodeList itemNodes = document.getElementsByTagName("item");
             List<AptTradeApiItem> items = new ArrayList<>();
             for (int index = 0; index < itemNodes.getLength(); index++) {
@@ -51,7 +58,7 @@ public class PublicDataAptTradeXmlParser {
                         text(item, "landLeaseholdGbn")
                 ));
             }
-            return new AptTradeApiResponse(totalCount, items);
+            return new AptTradeApiResponse(resultCode, resultMsg, totalCount, items);
         } catch (Exception exception) {
             throw new IllegalArgumentException("Failed to parse public data XML response", exception);
         }
@@ -63,6 +70,11 @@ public class PublicDataAptTradeXmlParser {
             return null;
         }
         return nodes.item(0).getTextContent().trim();
+    }
+
+    private static String firstText(Element element, String tagName) {
+        String value = text(element, tagName);
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static int parseInt(String value, int defaultValue) {

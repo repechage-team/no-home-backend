@@ -7,6 +7,8 @@ public record HouseSearchPageResponse(
         int page,
         int size,
         long totalCount,
+        Integer minDealAmountManwon,
+        Integer maxDealAmountManwon,
         boolean autoImportAttempted,
         List<AutoImportRangeResponse> importedRanges,
         List<AutoImportRangeResponse> skippedRanges
@@ -17,6 +19,6 @@ public record HouseSearchPageResponse(
             int size,
             long totalCount
     ) {
-        this(items, page, size, totalCount, false, List.of(), List.of());
+        this(items, page, size, totalCount, null, null, false, List.of(), List.of());
     }
 }

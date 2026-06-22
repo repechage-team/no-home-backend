@@ -1,6 +1,7 @@
 package com.ssafy.home.house.service;
 
 import com.ssafy.home.common.region.SeoulLawdCodeResolver;
+import com.ssafy.home.house.dto.HouseDealPriceRangeResponse;
 import com.ssafy.home.house.dto.HouseDealResponse;
 import com.ssafy.home.house.dto.HouseResponse;
 import com.ssafy.home.house.dto.HouseSearchCondition;
@@ -95,7 +96,62 @@ class HouseServiceTest {
         assertThat(response.size()).isEqualTo(100);
         assertThat(mapper.lastCondition.lawdCd()).isEqualTo("11590");
         assertThat(mapper.lastCondition.dealYmd()).isEqualTo("202605");
+        assertThat(mapper.lastCondition.sort()).isEqualTo("latest");
         assertThat(mapper.lastCondition.offset()).isZero();
+    }
+
+    @Test
+    void searchHouseDealsPassesSortAndPriceConditionsAndReturnsPriceRange() {
+        StubHouseMapper mapper = new StubHouseMapper();
+        mapper.priceRange = new HouseDealPriceRangeResponse(100000, 300000);
+        HouseService service = new HouseService(mapper);
+
+        HouseSearchPageResponse response = service.searchHouseDeals(
+                "11590", null, null, null, null, "202605", null, null, 2, 10, false,
+                "priceDesc", 120000, 250000
+        );
+
+        assertThat(mapper.lastCondition.sort()).isEqualTo("priceDesc");
+        assertThat(mapper.lastCondition.minPrice()).isEqualTo(120000);
+        assertThat(mapper.lastCondition.maxPrice()).isEqualTo(250000);
+        assertThat(mapper.lastCondition.offset()).isEqualTo(10);
+        assertThat(response.minDealAmountManwon()).isEqualTo(100000);
+        assertThat(response.maxDealAmountManwon()).isEqualTo(300000);
+    }
+
+    @Test
+    void searchHouseDealsRejectsInvalidSortAndInvertedPriceRange() {
+        HouseService service = new HouseService(new StubHouseMapper());
+
+        assertThatThrownBy(() -> service.searchHouseDeals(
+                "11590", null, null, null, null, "202605", null, null, 1, 20, false,
+                "unknown", null, null
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported sort");
+
+        assertThatThrownBy(() -> service.searchHouseDeals(
+                "11590", null, null, null, null, "202605", null, null, 1, 20, false,
+                "latest", 300000, 100000
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("minPrice");
+    }
+
+    @Test
+    void findHouseDealPriceRangeUsesConditionsWithoutCurrentPriceFilter() {
+        StubHouseMapper mapper = new StubHouseMapper();
+        mapper.priceRange = new HouseDealPriceRangeResponse(50000, 100000);
+        HouseService service = new HouseService(mapper);
+
+        HouseDealPriceRangeResponse response = service.findHouseDealPriceRange(
+                "11590", null, null, "Sangdo-dong", null, "202605", null, null, false
+        );
+
+        assertThat(response.minDealAmountManwon()).isEqualTo(50000);
+        assertThat(response.maxDealAmountManwon()).isEqualTo(100000);
+        assertThat(mapper.lastCondition.lawdCd()).isEqualTo("11590");
+        assertThat(mapper.lastCondition.umdNm()).isEqualTo("Sangdo-dong");
+        assertThat(mapper.lastCondition.minPrice()).isNull();
+        assertThat(mapper.lastCondition.maxPrice()).isNull();
     }
 
     @Test
@@ -254,6 +310,7 @@ class HouseServiceTest {
         private String lastLawdCd;
         private String lastDealYmd;
         private HouseSearchCondition lastCondition;
+        private HouseDealPriceRangeResponse priceRange = new HouseDealPriceRangeResponse(150000, 205000);
         private Map<String, ImportBatchResponse> importBatches = Map.of();
         private List<RegionResponse> regions = List.of(new RegionResponse(1L, "11590", "1159010500",
                 "서울특별시", "동작구", "흑석동", null, null));
@@ -297,6 +354,15 @@ class HouseServiceTest {
                 return 0;
             }
             return 1;
+        }
+
+        @Override
+        public HouseDealPriceRangeResponse selectHouseDealPriceRange(HouseSearchCondition condition) {
+            this.lastCondition = condition;
+            if ("none".equals(condition.aptName())) {
+                return new HouseDealPriceRangeResponse(null, null);
+            }
+            return priceRange;
         }
 
         @Override
