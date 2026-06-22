@@ -23,6 +23,7 @@ updated: 2026-06-22
 - [2026-06-21 도입 제안 & 버전업 협의](proposals/2026-06-21-proposal.md) — `type: proposal`, 팀 합의 완료
 
 ## 트러블슈팅 (troubleshooting/)
+- [2026-06-22 Spring AI 빈/무효 GMS 키 기동 실패와 graceful 비활성화](troubleshooting/2026-06-22-spring-ai-empty-key-graceful.md)
 - [2026-06-22 '서울' 미접두 자치구를 서울 외로 선판단해 거부](troubleshooting/2026-06-22-ai-region-prejudgment-refusal.md)
 - [2026-06-21 'AI 환각'처럼 보인 인코딩 문제](troubleshooting/2026-06-21-ai-prompt-and-hallucination.md)
 
