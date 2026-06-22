@@ -80,6 +80,21 @@
         <if test="condition.dealYmd != null">
           AND hd.deal_ymd = #{condition.dealYmd}
         </if>
+        <if test="condition.dealYmd == null and condition.startDealYmd != null">
+          AND hd.deal_ymd &gt;= #{condition.startDealYmd}
+        </if>
+        <if test="condition.dealYmd == null and condition.endDealYmd != null">
+          AND hd.deal_ymd &lt;= #{condition.endDealYmd}
+        </if>
+    </sql>
+
+    <sql id="houseDealPriceFilter">
+        <if test="condition.minPrice != null">
+          AND hd.deal_amount_manwon &gt;= #{condition.minPrice}
+        </if>
+        <if test="condition.maxPrice != null">
+          AND hd.deal_amount_manwon &lt;= #{condition.maxPrice}
+        </if>
     </sql>
 
     <select id="searchHouseDeals" resultType="com.ssafy.home.house.dto.HouseSearchResultResponse">
@@ -102,12 +117,34 @@
             h.lat,
             h.lng
         <include refid="houseDealSearchFromWhere"/>
-        ORDER BY hd.deal_date DESC, hd.deal_id DESC
+        <include refid="houseDealPriceFilter"/>
+        <choose>
+            <when test="condition.sort == 'oldest'">
+                ORDER BY hd.deal_date ASC, hd.deal_id ASC
+            </when>
+            <when test="condition.sort == 'priceDesc'">
+                ORDER BY hd.deal_amount_manwon IS NULL, hd.deal_amount_manwon DESC, hd.deal_date DESC, hd.deal_id DESC
+            </when>
+            <when test="condition.sort == 'priceAsc'">
+                ORDER BY hd.deal_amount_manwon IS NULL, hd.deal_amount_manwon ASC, hd.deal_date DESC, hd.deal_id DESC
+            </when>
+            <otherwise>
+                ORDER BY hd.deal_date DESC, hd.deal_id DESC
+            </otherwise>
+        </choose>
         LIMIT #{condition.size} OFFSET #{condition.offset}
     </select>
 
     <select id="countHouseDeals" resultType="long">
         SELECT COUNT(*)
+        <include refid="houseDealSearchFromWhere"/>
+        <include refid="houseDealPriceFilter"/>
+    </select>
+
+    <select id="selectHouseDealPriceRange" resultType="com.ssafy.home.house.dto.HouseDealPriceRangeResponse">
+        SELECT
+            MIN(hd.deal_amount_manwon) AS min_deal_amount_manwon,
+            MAX(hd.deal_amount_manwon) AS max_deal_amount_manwon
         <include refid="houseDealSearchFromWhere"/>
     </select>
 

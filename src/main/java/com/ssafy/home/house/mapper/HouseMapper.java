@@ -1,6 +1,7 @@
 package com.ssafy.home.house.mapper;
 
 import com.ssafy.home.house.dto.HouseDealResponse;
+import com.ssafy.home.house.dto.HouseDealPriceRangeResponse;
 import com.ssafy.home.house.dto.HouseResponse;
 import com.ssafy.home.house.dto.HouseSearchCondition;
 import com.ssafy.home.house.dto.HouseSearchResultResponse;
@@ -22,6 +23,8 @@ public interface HouseMapper {
     List<HouseSearchResultResponse> searchHouseDeals(@Param("condition") HouseSearchCondition condition);
 
     long countHouseDeals(@Param("condition") HouseSearchCondition condition);
+
+    HouseDealPriceRangeResponse selectHouseDealPriceRange(@Param("condition") HouseSearchCondition condition);
 
     Optional<ImportBatchResponse> selectImportBatch(
             @Param("sourceApi") String sourceApi,

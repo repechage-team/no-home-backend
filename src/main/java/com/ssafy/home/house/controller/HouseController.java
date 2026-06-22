@@ -1,6 +1,7 @@
 package com.ssafy.home.house.controller;
 
 import com.ssafy.home.common.response.ApiResponse;
+import com.ssafy.home.house.dto.HouseDealPriceRangeResponse;
 import com.ssafy.home.house.dto.HouseDealResponse;
 import com.ssafy.home.house.dto.HouseResponse;
 import com.ssafy.home.house.dto.HouseSearchPageResponse;
@@ -44,13 +45,44 @@ public class HouseController {
             @RequestParam(required = false) String umdNm,
             @RequestParam(required = false) String aptName,
             @RequestParam(required = false) String dealYmd,
+            @RequestParam(required = false) String startDealYmd,
+            @RequestParam(required = false) String endDealYmd,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @RequestParam(required = false, defaultValue = "true") Boolean autoImport
+            @RequestParam(required = false, defaultValue = "true") Boolean autoImport,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) Integer minPrice,
+            @RequestParam(required = false) Integer maxPrice
     ) {
         try {
             HouseSearchPageResponse result = houseService.searchHouseDeals(
-                    lawdCd, sido, sigungu, umdNm, aptName, dealYmd, page, size, autoImport
+                    lawdCd, sido, sigungu, umdNm, aptName, dealYmd, startDealYmd, endDealYmd, page, size, autoImport,
+                    sort, minPrice, maxPrice
+            );
+            return ResponseEntity.ok(ApiResponse.ok(result));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail(e.getMessage(), null));
+        } catch (AutoImportException e) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(ApiResponse.fail(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/houses/price-range")
+    public ResponseEntity<ApiResponse<HouseDealPriceRangeResponse>> housePriceRange(
+            @RequestParam(required = false) String lawdCd,
+            @RequestParam(required = false) String sido,
+            @RequestParam(required = false) String sigungu,
+            @RequestParam(required = false) String umdNm,
+            @RequestParam(required = false) String aptName,
+            @RequestParam(required = false) String dealYmd,
+            @RequestParam(required = false) String startDealYmd,
+            @RequestParam(required = false) String endDealYmd,
+            @RequestParam(required = false, defaultValue = "true") Boolean autoImport
+    ) {
+        try {
+            HouseDealPriceRangeResponse result = houseService.findHouseDealPriceRange(
+                    lawdCd, sido, sigungu, umdNm, aptName, dealYmd, startDealYmd, endDealYmd, autoImport
             );
             return ResponseEntity.ok(ApiResponse.ok(result));
         } catch (IllegalArgumentException e) {
