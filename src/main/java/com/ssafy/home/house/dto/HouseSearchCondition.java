@@ -1,6 +1,7 @@
 package com.ssafy.home.house.dto;
 
 public record HouseSearchCondition(
+        String dealMode,
         String lawdCd,
         String sido,
         String sigungu,
@@ -12,6 +13,10 @@ public record HouseSearchCondition(
         String sort,
         Integer minPrice,
         Integer maxPrice,
+        Integer minDeposit,
+        Integer maxDeposit,
+        Integer minMonthlyRent,
+        Integer maxMonthlyRent,
         int page,
         int size,
         int offset

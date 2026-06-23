@@ -108,15 +108,21 @@
         INSERT IGNORE INTO house_deals (
             house_id, source_api, lawd_cd, deal_ymd, house_type, deal_type,
             deal_year, deal_month, deal_day, deal_date, deal_amount, deal_amount_manwon,
+            rent_type, deposit, deposit_manwon, monthly_rent, monthly_rent_manwon,
             exclu_use_ar, floor, apt_dong, buyer_gbn, sler_gbn, dealing_gbn,
             estate_agent_sgg_nm, cdeal_type, cdeal_day, rgst_date, land_leasehold_gbn,
+            contract_term, contract_type, use_rr_right, pre_deposit, pre_deposit_manwon,
+            pre_monthly_rent, pre_monthly_rent_manwon, roadnm, apt_seq,
             api_row_hash, raw_response
         )
         VALUES (
-            #{command.houseId}, #{command.sourceApi}, #{command.lawdCd}, #{command.dealYmd}, 'apartment', 'sale',
+            #{command.houseId}, #{command.sourceApi}, #{command.lawdCd}, #{command.dealYmd}, 'apartment', #{command.dealType},
             #{command.dealYear}, #{command.dealMonth}, #{command.dealDay}, #{command.dealDate}, #{command.dealAmount}, #{command.dealAmountManwon},
+            #{command.rentType}, #{command.deposit}, #{command.depositManwon}, #{command.monthlyRent}, #{command.monthlyRentManwon},
             #{command.excluUseAr}, #{command.floor}, #{command.aptDong}, #{command.buyerGbn}, #{command.slerGbn}, #{command.dealingGbn},
             #{command.estateAgentSggNm}, #{command.cdealType}, #{command.cdealDay}, #{command.rgstDate}, #{command.landLeaseholdGbn},
+            #{command.contractTerm}, #{command.contractType}, #{command.useRRRight}, #{command.preDeposit}, #{command.preDepositManwon},
+            #{command.preMonthlyRent}, #{command.preMonthlyRentManwon}, #{command.roadnm}, #{command.aptSeq},
             #{command.apiRowHash}, #{command.rawResponse}
         )
     </insert>

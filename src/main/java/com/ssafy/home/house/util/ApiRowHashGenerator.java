@@ -11,7 +11,7 @@ public final class ApiRowHashGenerator {
     }
 
     public static String generate(ApiRowHashInput input) {
-        String canonical = String.join("|",
+        String canonical = input.monthlyRent() == null ? String.join("|",
                 normalize(input.sourceApi()),
                 normalize(input.lawdCd()),
                 normalize(input.dealYmd()),
@@ -22,6 +22,20 @@ public final class ApiRowHashGenerator {
                 normalize(input.dealMonth()),
                 normalize(input.dealDay()),
                 normalizeAmount(input.dealAmount()),
+                normalize(input.excluUseAr()),
+                normalize(input.floor())
+        ) : String.join("|",
+                normalize(input.sourceApi()),
+                normalize(input.lawdCd()),
+                normalize(input.dealYmd()),
+                normalize(input.umdNm()),
+                normalize(input.jibun()),
+                normalize(input.aptNm()),
+                normalize(input.dealYear()),
+                normalize(input.dealMonth()),
+                normalize(input.dealDay()),
+                normalizeAmount(input.dealAmount()),
+                normalizeAmount(input.monthlyRent()),
                 normalize(input.excluUseAr()),
                 normalize(input.floor())
         );

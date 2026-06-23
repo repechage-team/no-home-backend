@@ -10,7 +10,7 @@ public record AptTradeApiResponse(String resultCode, String resultMsg, int total
      * 근거: data.go.kr 공통 오류코드표(정상=00, 오류는 01/04/12/20/22/30/31/32/99 등 비-0) +
      * getRTMSDataSvcAptTrade 응답 실측(resultCode=000, resultMsg=OK).
      */
-    private static final Set<String> NORMAL_RESULT_CODES = Set.of("00", "000");
+    private static final Set<String> NORMAL_RESULT_CODES = Set.of("00", "000", "03");
 
     public boolean isSuccess() {
         if (resultCode == null) {

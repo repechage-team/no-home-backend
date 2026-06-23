@@ -1,10 +1,10 @@
 package com.ssafy.home.publicdata.service;
 
 import com.ssafy.home.common.region.SeoulLawdCodeResolver;
-import com.ssafy.home.publicdata.client.PublicDataAptTradeClient;
-import com.ssafy.home.publicdata.client.PublicDataAptTradeXmlParser;
-import com.ssafy.home.publicdata.dto.AptTradeApiItem;
-import com.ssafy.home.publicdata.dto.AptTradeApiResponse;
+import com.ssafy.home.publicdata.client.PublicDataAptRentClient;
+import com.ssafy.home.publicdata.client.PublicDataAptRentXmlParser;
+import com.ssafy.home.publicdata.dto.AptRentApiItem;
+import com.ssafy.home.publicdata.dto.AptRentApiResponse;
 import com.ssafy.home.publicdata.dto.PublicDataImportResult;
 import com.ssafy.home.publicdata.mapper.HouseDealInsertCommand;
 import com.ssafy.home.publicdata.mapper.HouseUpsertCommand;
@@ -12,26 +12,26 @@ import com.ssafy.home.publicdata.mapper.PublicDataImportMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.ssafy.home.publicdata.service.AptTradeImportCommandFactory.DEAL_TYPE;
-import static com.ssafy.home.publicdata.service.AptTradeImportCommandFactory.HOUSE_TYPE;
-import static com.ssafy.home.publicdata.service.AptTradeImportCommandFactory.SOURCE_API;
+import static com.ssafy.home.publicdata.service.AptRentImportCommandFactory.DEAL_TYPE;
+import static com.ssafy.home.publicdata.service.AptRentImportCommandFactory.HOUSE_TYPE;
+import static com.ssafy.home.publicdata.service.AptRentImportCommandFactory.SOURCE_API;
 
 @Service
-public class PublicDataImportService {
+public class PublicDataAptRentImportService {
 
     private static final int PAGE_SIZE = 100;
 
-    private final PublicDataAptTradeClient client;
-    private final PublicDataAptTradeXmlParser parser;
+    private final PublicDataAptRentClient client;
+    private final PublicDataAptRentXmlParser parser;
     private final PublicDataImportMapper mapper;
-    private final AptTradeImportCommandFactory commandFactory;
+    private final AptRentImportCommandFactory commandFactory;
     private final SeoulLawdCodeResolver seoulLawdCodeResolver;
 
-    public PublicDataImportService(
-            PublicDataAptTradeClient client,
-            PublicDataAptTradeXmlParser parser,
+    public PublicDataAptRentImportService(
+            PublicDataAptRentClient client,
+            PublicDataAptRentXmlParser parser,
             PublicDataImportMapper mapper,
-            AptTradeImportCommandFactory commandFactory,
+            AptRentImportCommandFactory commandFactory,
             SeoulLawdCodeResolver seoulLawdCodeResolver
     ) {
         this.client = client;
@@ -42,7 +42,7 @@ public class PublicDataImportService {
     }
 
     @Transactional
-    public PublicDataImportResult importAptTrades(String lawdCd, String dealYmd) {
+    public PublicDataImportResult importAptRents(String lawdCd, String dealYmd) {
         if (mapper.selectSuccessBatchId(SOURCE_API, lawdCd, dealYmd, HOUSE_TYPE, DEAL_TYPE).isPresent()) {
             return new PublicDataImportResult(SOURCE_API, lawdCd, dealYmd, "success", 0, 0, 0, true,
                     "success batch already exists; skipped normal import");
@@ -76,7 +76,7 @@ public class PublicDataImportService {
         int pageNo = 1;
 
         while (true) {
-            AptTradeApiResponse response = parser.parse(client.fetchXml(lawdCd, dealYmd, pageNo, PAGE_SIZE));
+            AptRentApiResponse response = parser.parse(client.fetchXml(lawdCd, dealYmd, pageNo, PAGE_SIZE));
             validateSuccess(response);
             if (pageNo == 1) {
                 totalCount = response.totalCount();
@@ -97,40 +97,22 @@ public class PublicDataImportService {
         return new ImportResult(totalCount, counters);
     }
 
-    private static void validateSuccess(AptTradeApiResponse response) {
+    private static void validateSuccess(AptRentApiResponse response) {
         if (response.isSuccess()) {
             return;
         }
 
         throw new PublicDataApiException(
-                classifyApiFailure(response.resultCode(), response.resultMsg()),
+                PublicDataImportService.classifyApiFailure(response.resultCode(), response.resultMsg()),
                 response.resultCode(),
                 response.resultMsg()
         );
     }
 
-    static PublicDataApiException.Reason classifyApiFailure(String resultCode, String resultMsg) {
-        String code = resultCode == null ? "" : resultCode.trim();
-        String message = resultMsg == null ? "" : resultMsg.toLowerCase();
-
-        if ("22".equals(code) || message.contains("traffic") || message.contains("quota")) {
-            return PublicDataApiException.Reason.QUOTA;
-        }
-        if ("30".equals(code) || "31".equals(code)
-                || message.contains("service key")
-                || message.contains("servic key")
-                || message.contains("auth")
-                || message.contains("expired")
-                || message.contains("unregistered")) {
-            return PublicDataApiException.Reason.KEY_INVALID;
-        }
-        return PublicDataApiException.Reason.PROVIDER_ERROR;
-    }
-
-    private ImportCounters importItems(String lawdCd, String dealYmd, AptTradeApiResponse response) {
+    private ImportCounters importItems(String lawdCd, String dealYmd, AptRentApiResponse response) {
         ImportCounters counters = new ImportCounters();
         String sigungu = seoulLawdCodeResolver.sigunguName(lawdCd).orElse("");
-        for (AptTradeApiItem item : response.items()) {
+        for (AptRentApiItem item : response.items()) {
             mapper.upsertRegion(lawdCd, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, sigungu, item.umdNm());
             Long regionId = mapper.selectRegionId(lawdCd, item.umdNm())
                     .orElseThrow(() -> new IllegalStateException("region upsert failed: " + item.umdNm()));
