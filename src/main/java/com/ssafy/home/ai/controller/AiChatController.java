@@ -2,6 +2,7 @@ package com.ssafy.home.ai.controller;
 
 import com.ssafy.home.ai.limit.AiChatRateLimiter;
 import com.ssafy.home.ai.tool.HouseTools;
+import org.springframework.ai.chat.memory.ChatMemory;
 import com.ssafy.home.common.response.ApiResponse;
 import com.ssafy.home.member.auth.AuthenticatedMember;
 import jakarta.servlet.http.HttpServletRequest;
@@ -72,7 +73,11 @@ public class AiChatController {
         this.maxMessageLength = maxMessageLength;
     }
 
-    public record ChatRequest(String message) {
+    // conversationId: 프론트가 세션 단위(sessionStorage UUID)로 전달. 누락 시 memberId로 fallback.
+    public record ChatRequest(String message, String conversationId) {
+        public ChatRequest(String message) {
+            this(message, null);
+        }
     }
 
     @PostMapping("/chat")
@@ -111,9 +116,11 @@ public class AiChatController {
         }
 
         try {
+            String conversationId = resolveConversationId(request, memberId);
             String answer = chatClient.prompt()
                     .system(SYSTEM_PROMPT)
                     .user(message)
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
                     .tools(houseTools)
                     .options(ChatOptions.builder().temperature(0.0).build())
                     .call()
@@ -149,6 +156,19 @@ public class AiChatController {
         }
         Object value = request.getAttribute(AuthenticatedMember.REQUEST_ATTRIBUTE);
         return value instanceof Long memberId ? memberId : null;
+    }
+
+    /**
+     * 대화기억 키. memberId로 네임스페이스해 사용자 간 격리를 보장하고, 프론트가 보낸 세션 conversationId로
+     * 세션을 분리한다(누락 시 'default'). 휘발성 저장소라 세션 종료 시 새 conversationId가 되어 초기화된다.
+     */
+    static String resolveConversationId(ChatRequest request, Long memberId) {
+        String client = request == null ? null : request.conversationId();
+        String base = (client == null || client.isBlank()) ? "default" : client.trim();
+        if (base.length() > 64) {
+            base = base.substring(0, 64);
+        }
+        return memberId + ":" + base;
     }
 
     private static boolean isTimeout(Throwable exception) {
