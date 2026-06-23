@@ -27,11 +27,13 @@ related:
 
 ## 2. 제안 구조
 단일 엔드포인트 `POST /api/ai/assistant`에서 LLM이 두 종류 tool을 가짐:
-- **데이터 조회 tool**(서버 실행, `returnDirect=false`): `searchSeoulAptDeals`(+전월세 확장) → DB 조회 후 LLM 텍스트 답변.
+- **데이터 조회 tool**(서버 실행, `returnDirect=false`): `searchSeoulAptDeals`(+전월세 확장) → `HouseService.searchHouseDeals`(DB 캐시 또는 라이브 공공데이터 조회, BE #27) 후 LLM 텍스트 답변.
 - **프론트 액션 tool**(`@Tool(returnDirect=true)`): `applyFiltersAndSearch·setFilters·paginate·selectItem·mapFocus·reset`
   → 메서드 본문은 **부작용 없이** 인자를 `AgentCommand`로 조립·가드 후 반환 → 프론트가 실행.
 
 동작: 사용자 발화 → 모델 판단 → (질문) 데이터 tool→텍스트 / (조작) 액션 tool→명령. **모드 토글 제거.**
+
+> **선행 머지 반영(2026-06-23)**: 단기 대화기억(Phase 5, BE #28/FE #12)이 중앙 `ChatClient` 빈에 `MessageChatMemoryAdvisor`로 부착되어 머지됨 → 통합 `/assistant`도 **같은 빈을 쓰므로 멀티턴 기억이 자동 승계**(추가 작업 없음). 라이브 검색 파이프라인(BE #27)으로 데이터 tool 경로에 외부 API 호출이 끼어들 수 있으므로 **tool/요청 timeout 정책에 라이브 지연을 반영**(Phase 1).
 
 ## 3. 타당성 조사
 
