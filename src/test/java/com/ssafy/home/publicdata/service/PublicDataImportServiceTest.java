@@ -72,9 +72,10 @@ class PublicDataImportServiceTest {
     @Test
     void importKeepsSuccessfulZeroRowsAsNoData() {
         StubMapper mapper = new StubMapper();
+        // RTMS 실측 정상 코드는 "000"(NORMAL SERVICE). "00"은 공통표준 정상.
         PublicDataImportService service = newService(mapper, """
                 <response>
-                  <header><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header>
+                  <header><resultCode>000</resultCode><resultMsg>OK</resultMsg></header>
                   <body><totalCount>0</totalCount><items></items></body>
                 </response>
                 """);
@@ -86,6 +87,26 @@ class PublicDataImportServiceTest {
         assertThat(result.importedCount()).isZero();
         assertThat(result.skippedCount()).isZero();
         assertThat(mapper.successBatchTotalCount).isZero();
+        assertThat(mapper.failedBatchCount).isZero();
+    }
+
+    @Test
+    void importSucceedsWhenResultCodeIs000WithItems() {
+        // 회귀 방지: RTMS 정상 응답 resultCode="000" + item이 정상 적재되어야 한다(이전엔 "00"만 인정해 실패 분류됨).
+        StubMapper mapper = new StubMapper();
+        PublicDataImportService service = newService(mapper, """
+                <response>
+                  <header><resultCode>000</resultCode><resultMsg>OK</resultMsg></header>
+                  <body><totalCount>1</totalCount><items>
+                    <item><sggCd>11680</sggCd><umdNm>역삼동</umdNm><jibun>10</jibun><aptNm>역삼래미안</aptNm><buildYear>2015</buildYear><dealYear>2024</dealYear><dealMonth>5</dealMonth><dealDay>12</dealDay><dealAmount>250,000</dealAmount><excluUseAr>84.970</excluUseAr><floor>12</floor></item>
+                  </items></body>
+                </response>
+                """);
+
+        PublicDataImportResult result = service.importAptTrades("11680", "202405");
+
+        assertThat(result.status()).isEqualTo("success");
+        assertThat(result.importedCount()).isEqualTo(1);
         assertThat(mapper.failedBatchCount).isZero();
     }
 

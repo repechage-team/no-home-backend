@@ -2,7 +2,7 @@
 title: 자동 임포트 오류 원인 미구분 (resultCode 미파싱 → 무효/만료 키가 "데이터 없음"으로 위장)
 domain: _shared          # publicdata + house(+ai 소비) 교차
 type: issue
-status: open
+status: resolved
 severity: medium
 author: 이정헌
 created: 2026-06-22
@@ -41,6 +41,9 @@ data.go.kr은 **HTTP 200 본문의 결과코드**로 오류를 반환한다: `30
 
 ## 참고 코드 경로
 `publicdata/client/PublicDataAptTradeXmlParser`, `publicdata/client/PublicDataAptTradeClient`, `publicdata/service/PublicDataImportService`, `house/service/HouseService`(`ensureCoverage`), `house/service/AutoImportException`, `ai/tool/HouseTools`, `house/controller/HouseController`.
+
+## 후속 (2026-06-23)
+- 본 이슈 구현(BE #13, `e683784`)이 성공코드를 "00"으로만 인정해 RTMS 정상코드 **"000"** 을 실패로 오분류하는 회귀가 있었음. 성공 판정을 명세 출처 기반 화이트리스트 `{"00","000"}`로 보정(+ 실측 계약 테스트, 실패 로그 resultCode/resultMsg 노출). status `open→resolved`. 상세: [트러블슈팅](../troubleshooting/2026-06-23-publicdata-resultcode-000-and-ua.md).
 
 ## 참고
 - GitHub 이슈: [repechage-team/no-home-backend#9](https://github.com/repechage-team/no-home-backend/issues/9).
