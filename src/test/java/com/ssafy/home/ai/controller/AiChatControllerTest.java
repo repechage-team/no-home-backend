@@ -226,6 +226,7 @@ class AiChatControllerTest {
         when(requestSpec.system(anyString())).thenReturn(requestSpec);
         when(requestSpec.user(anyString())).thenReturn(requestSpec);
         when(requestSpec.tools(houseTools)).thenReturn(requestSpec);
+        when(requestSpec.advisors(any(java.util.function.Consumer.class))).thenReturn(requestSpec);
         when(requestSpec.options(any(ChatOptions.class))).thenReturn(requestSpec);
         return requestSpec;
     }

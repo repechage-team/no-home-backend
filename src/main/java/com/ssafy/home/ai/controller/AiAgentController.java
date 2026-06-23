@@ -5,6 +5,7 @@ import com.ssafy.home.ai.agent.AgentCommandGuards;
 import com.ssafy.home.ai.limit.AiChatRateLimiter;
 import com.ssafy.home.common.region.SeoulLawdCodeResolver;
 import com.ssafy.home.common.response.ApiResponse;
+import org.springframework.ai.chat.memory.ChatMemory;
 import com.ssafy.home.member.auth.AuthenticatedMember;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -110,7 +111,8 @@ public class AiAgentController {
             List<String> capabilities,
             Map<String, String> currentFilters,
             Integer currentPage,
-            Integer totalPages
+            Integer totalPages,
+            String conversationId
     ) {
     }
 
@@ -150,9 +152,11 @@ public class AiAgentController {
         }
 
         try {
+            String conversationId = resolveConversationId(request, memberId);
             AgentCommand command = chatClient.prompt()
                     .system(buildSystemPrompt(request))
                     .user(message)
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
                     .options(ChatOptions.builder().temperature(0.0).build())
                     .call()
                     .entity(AgentCommand.class);
@@ -202,6 +206,19 @@ public class AiAgentController {
         }
         Object value = request.getAttribute(AuthenticatedMember.REQUEST_ATTRIBUTE);
         return value instanceof Long memberId ? memberId : null;
+    }
+
+    /**
+     * 대화기억 키. memberId 네임스페이스(사용자 격리) + 프론트 세션 conversationId(세션 분리, 누락 시 'default').
+     * 휘발성 저장소라 세션 종료 시 새 conversationId가 되어 초기화된다. 질문 모드와 동일 규칙.
+     */
+    private static String resolveConversationId(AgentRequest request, Long memberId) {
+        String client = request == null ? null : request.conversationId();
+        String base = (client == null || client.isBlank()) ? "default" : client.trim();
+        if (base.length() > 64) {
+            base = base.substring(0, 64);
+        }
+        return memberId + ":" + base;
     }
 
     // NOTE: 질문 모드 컨트롤러(AiChatController)와 동일한 공급자 오류 분류 로직.

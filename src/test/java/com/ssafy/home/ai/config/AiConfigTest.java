@@ -5,6 +5,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -17,7 +18,6 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,29 +29,34 @@ class AiConfigTest {
     void keepsDiagnosticAdvisorDisabledByDefault() {
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         ChatClient chatClient = mock(ChatClient.class);
+        ChatMemory chatMemory = mock(ChatMemory.class);
+        when(builder.defaultAdvisors(any(Advisor[].class))).thenReturn(builder);
         when(builder.build()).thenReturn(chatClient);
 
-        ChatClient result = aiConfig.chatClient(builder, false);
+        ChatClient result = aiConfig.chatClient(builder, chatMemory, false);
 
         assertThat(result).isSameAs(chatClient);
-        verify(builder, never()).defaultAdvisors(any(Advisor[].class));
+        // 대화기억 advisor는 항상 부착, 진단 advisor는 기본 비활성.
+        org.mockito.ArgumentCaptor<Advisor[]> captor = org.mockito.ArgumentCaptor.forClass(Advisor[].class);
+        verify(builder).defaultAdvisors(captor.capture());
+        assertThat(captor.getValue()).noneMatch(advisor -> advisor instanceof SimpleLoggerAdvisor);
     }
 
     @Test
     void registersSanitizedDiagnosticAdvisorOnlyWhenExplicitlyEnabled() {
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         ChatClient chatClient = mock(ChatClient.class);
+        ChatMemory chatMemory = mock(ChatMemory.class);
         when(builder.defaultAdvisors(any(Advisor[].class))).thenReturn(builder);
         when(builder.build()).thenReturn(chatClient);
 
-        ChatClient result = aiConfig.chatClient(builder, true);
+        ChatClient result = aiConfig.chatClient(builder, chatMemory, true);
 
         assertThat(result).isSameAs(chatClient);
         org.mockito.ArgumentCaptor<Advisor[]> captor = org.mockito.ArgumentCaptor.forClass(Advisor[].class);
         verify(builder).defaultAdvisors(captor.capture());
-        assertThat(captor.getValue())
-                .singleElement()
-                .isInstanceOf(SimpleLoggerAdvisor.class);
+        // 진단 활성화 시 SimpleLoggerAdvisor가 함께 부착된다(대화기억 advisor와 공존).
+        assertThat(captor.getValue()).anyMatch(advisor -> advisor instanceof SimpleLoggerAdvisor);
     }
 
     @Test
