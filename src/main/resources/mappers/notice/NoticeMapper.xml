@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.home.notice.mapper.NoticeMapper">
+
+    <insert id="insertNotice" useGeneratedKeys="true" keyProperty="noticeId">
+        INSERT INTO notices (member_id, title, content)
+        VALUES (#{memberId}, #{title}, #{content})
+    </insert>
+
+    <select id="selectById" resultType="com.ssafy.home.notice.dto.Notice">
+        SELECT
+            notice_id,
+            member_id,
+            title,
+            content,
+            created_at,
+            updated_at
+        FROM notices
+        WHERE notice_id = #{noticeId}
+    </select>
+
+    <select id="selectRecent" resultType="com.ssafy.home.notice.dto.Notice">
+        SELECT
+            notice_id,
+            member_id,
+            title,
+            content,
+            created_at,
+            updated_at
+        FROM notices
+        ORDER BY created_at DESC, notice_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="updateNotice">
+        UPDATE notices
+        SET title = #{title},
+            content = #{content},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE notice_id = #{noticeId}
+    </update>
+
+    <delete id="deleteNotice">
+        DELETE FROM notices
+        WHERE notice_id = #{noticeId}
+    </delete>
+</mapper>
