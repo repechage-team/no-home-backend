@@ -36,10 +36,33 @@
         WHERE email = #{email}
     </select>
 
+    <select id="searchMembers" resultType="com.ssafy.home.member.dto.Member">
+        SELECT
+            member_id,
+            email,
+            password_hash,
+            name,
+            phone,
+            created_at,
+            updated_at
+        FROM members
+        WHERE email LIKE CONCAT('%', #{keyword}, '%')
+           OR name LIKE CONCAT('%', #{keyword}, '%')
+           OR phone LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY member_id ASC
+        LIMIT 20
+    </select>
+
     <update id="updateCurrentMember">
         UPDATE members
         SET name = #{name},
             phone = #{phone}
+        WHERE member_id = #{memberId}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE members
+        SET password_hash = #{passwordHash}
         WHERE member_id = #{memberId}
     </update>
 

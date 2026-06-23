@@ -9,6 +9,7 @@ import com.ssafy.home.member.dto.MemberLoginRequest;
 import com.ssafy.home.member.dto.MemberResponse;
 import com.ssafy.home.member.dto.MemberSignupRequest;
 import com.ssafy.home.member.dto.MemberUpdateRequest;
+import com.ssafy.home.member.dto.PasswordResetRequest;
 import com.ssafy.home.member.service.MemberErrorCode;
 import com.ssafy.home.member.service.MemberException;
 import com.ssafy.home.member.service.MemberService;
@@ -22,8 +23,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -92,10 +95,33 @@ public class MemberController {
         return ApiResponse.ok("logged out", Map.of("loggedOut", true));
     }
 
+    @PostMapping("/auth/password-reset")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> resetPassword(@RequestBody PasswordResetRequest request) {
+        try {
+            MemberResponse member = memberService.resetPassword(request);
+            memberAuthService.revokeMember(member.memberId());
+            return ResponseEntity.ok(ApiResponse.ok("password reset", Map.of("reset", true)));
+        } catch (MemberException e) {
+            return error(e);
+        }
+    }
+
     @GetMapping("/members/me")
     public ResponseEntity<ApiResponse<MemberResponse>> me(HttpServletRequest request) {
         try {
             return ResponseEntity.ok(ApiResponse.ok(memberService.findCurrentMember(currentMemberId(request))));
+        } catch (MemberException e) {
+            return error(e);
+        }
+    }
+
+    @GetMapping("/members/search")
+    public ResponseEntity<ApiResponse<List<MemberResponse>>> searchMembers(
+            @RequestParam String keyword,
+            HttpServletRequest request
+    ) {
+        try {
+            return ResponseEntity.ok(ApiResponse.ok(memberService.searchMembers(currentMemberId(request), keyword)));
         } catch (MemberException e) {
             return error(e);
         }

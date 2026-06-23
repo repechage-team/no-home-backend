@@ -12,6 +12,7 @@ import com.ssafy.home.member.auth.MemberAuthService;
 import com.ssafy.home.member.dto.MemberResponse;
 import com.ssafy.home.member.dto.MemberSignupRequest;
 import com.ssafy.home.member.dto.MemberUpdateRequest;
+import com.ssafy.home.member.dto.PasswordResetRequest;
 import com.ssafy.home.member.service.MemberErrorCode;
 import com.ssafy.home.member.service.MemberException;
 import com.ssafy.home.member.service.MemberService;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -92,6 +94,25 @@ class MemberControllerTest {
     }
 
     @Test
+    void passwordResetRevokesExistingRefreshToken() throws Exception {
+        MemberService service = mock(MemberService.class);
+        MemberAuthService authService = mock(MemberAuthService.class);
+        when(service.resetPassword(any(PasswordResetRequest.class)))
+                .thenReturn(response(1L, "user@example.com", "User"));
+        MockMvc mockMvc = standaloneSetup(controller(service, authService)).build();
+
+        mockMvc.perform(post("/api/auth/password-reset")
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"user@example.com","name":"User","phone":"010","newPassword":"new-password"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reset").value(true));
+
+        verify(authService).revokeMember(1L);
+    }
+
+    @Test
     void refreshRotatesCookiesAndInvalidRefreshReturnsUnauthorized() throws Exception {
         MemberService service = mock(MemberService.class);
         MemberAuthService authService = mock(MemberAuthService.class);
@@ -144,6 +165,22 @@ class MemberControllerTest {
 
         verify(authService).revokeMember(1L);
         verify(service).deleteCurrentMember(1L);
+    }
+
+    @Test
+    void memberSearchUsesAuthenticatedRequestMemberOnly() throws Exception {
+        MemberService service = mock(MemberService.class);
+        MemberAuthService authService = mock(MemberAuthService.class);
+        when(service.searchMembers(1L, "user"))
+                .thenReturn(List.of(response(1L, "user@example.com", "User")));
+        MockMvc mockMvc = standaloneSetup(controller(service, authService)).build();
+
+        mockMvc.perform(get("/api/members/search")
+                        .requestAttr(AuthenticatedMember.REQUEST_ATTRIBUTE, 1L)
+                        .param("keyword", "user"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].email").value("user@example.com"))
+                .andExpect(jsonPath("$.data[0].passwordHash").doesNotExist());
     }
 
     @Test

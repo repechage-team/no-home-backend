@@ -4,12 +4,14 @@ import com.ssafy.home.member.dto.Member;
 import com.ssafy.home.member.dto.MemberResponse;
 import com.ssafy.home.member.dto.MemberSignupRequest;
 import com.ssafy.home.member.dto.MemberUpdateRequest;
+import com.ssafy.home.member.dto.PasswordResetRequest;
 import com.ssafy.home.member.mapper.MemberInsertCommand;
 import com.ssafy.home.member.mapper.MemberMapper;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -75,6 +77,38 @@ class MemberServiceTest {
     }
 
     @Test
+    void resetPasswordUpdatesHashAfterIdentityCheck() {
+        StubMemberMapper mapper = new StubMemberMapper();
+        PasswordHasher passwordHasher = new PasswordHasher();
+        mapper.save(member(1L, "user@example.com", passwordHasher.hash("old-password"), "User", "010"));
+        MemberService service = new MemberService(mapper, passwordHasher);
+
+        MemberResponse response = service.resetPassword(new PasswordResetRequest(
+                " user@example.com ", " User ", " 010 ", "new-password"
+        ));
+
+        assertThat(response.memberId()).isEqualTo(1L);
+        assertThat(mapper.lastUpdatedPasswordMemberId).isEqualTo(1L);
+        assertThat(passwordHasher.matches("new-password", mapper.membersById.get(1L).passwordHash())).isTrue();
+        assertThat(passwordHasher.matches("old-password", mapper.membersById.get(1L).passwordHash())).isFalse();
+    }
+
+    @Test
+    void resetPasswordFailsWhenIdentityDoesNotMatch() {
+        StubMemberMapper mapper = new StubMemberMapper();
+        PasswordHasher passwordHasher = new PasswordHasher();
+        mapper.save(member(1L, "user@example.com", passwordHasher.hash("old-password"), "User", "010"));
+        MemberService service = new MemberService(mapper, passwordHasher);
+
+        assertThatThrownBy(() -> service.resetPassword(new PasswordResetRequest(
+                "user@example.com", "Wrong", "010", "new-password"
+        )))
+                .isInstanceOf(MemberException.class)
+                .extracting("errorCode")
+                .isEqualTo(MemberErrorCode.INVALID_CREDENTIALS);
+    }
+
+    @Test
     void currentMemberLookupUpdateAndDeleteUseCurrentMemberIdOnly() {
         StubMemberMapper mapper = new StubMemberMapper();
         mapper.save(member(1L, "one@example.com", "hash1", "One", null));
@@ -90,6 +124,22 @@ class MemberServiceTest {
         assertThat(mapper.membersById).containsKey(2L);
         assertThat(mapper.lastUpdatedMemberId).isEqualTo(1L);
         assertThat(mapper.lastDeletedMemberId).isEqualTo(1L);
+    }
+
+    @Test
+    void searchMembersRequiresLoginAndSearchesByKeyword() {
+        StubMemberMapper mapper = new StubMemberMapper();
+        mapper.save(member(1L, "one@example.com", "hash1", "One", "010-1111"));
+        mapper.save(member(2L, "two@example.com", "hash2", "Two", "010-2222"));
+        MemberService service = new MemberService(mapper, new PasswordHasher());
+
+        List<MemberResponse> results = service.searchMembers(1L, "two");
+
+        assertThat(results).extracting(MemberResponse::email).containsExactly("two@example.com");
+        assertThatThrownBy(() -> service.searchMembers(null, "two"))
+                .isInstanceOf(MemberException.class)
+                .extracting("errorCode")
+                .isEqualTo(MemberErrorCode.UNAUTHENTICATED);
     }
 
     @Test
@@ -114,6 +164,7 @@ class MemberServiceTest {
         private long sequence = 1L;
         private Long lastUpdatedMemberId;
         private Long lastDeletedMemberId;
+        private Long lastUpdatedPasswordMemberId;
 
         @Override
         public int insertMember(MemberInsertCommand command) {
@@ -137,6 +188,16 @@ class MemberServiceTest {
         }
 
         @Override
+        public List<Member> searchMembers(String keyword) {
+            String normalized = keyword.toLowerCase();
+            return membersById.values().stream()
+                    .filter(member -> member.email().toLowerCase().contains(normalized)
+                            || member.name().toLowerCase().contains(normalized)
+                            || (member.phone() != null && member.phone().toLowerCase().contains(normalized)))
+                    .toList();
+        }
+
+        @Override
         public int updateCurrentMember(Long memberId, String name, String phone) {
             lastUpdatedMemberId = memberId;
             Member existing = membersById.get(memberId);
@@ -144,6 +205,17 @@ class MemberServiceTest {
                 return 0;
             }
             save(member(existing.memberId(), existing.email(), existing.passwordHash(), name, phone));
+            return 1;
+        }
+
+        @Override
+        public int updatePassword(Long memberId, String passwordHash) {
+            lastUpdatedPasswordMemberId = memberId;
+            Member existing = membersById.get(memberId);
+            if (existing == null) {
+                return 0;
+            }
+            save(member(existing.memberId(), existing.email(), passwordHash, existing.name(), existing.phone()));
             return 1;
         }
 
