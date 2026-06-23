@@ -76,6 +76,34 @@ class MemberMapperTest {
     }
 
     @Test
+    void updatePasswordChangesOnlyPasswordHash() {
+        MemberInsertCommand command = insertMember("password@example.com", "hash-before", "Password User", "010");
+
+        int updated = memberMapper.updatePassword(command.getMemberId(), "hash-after");
+
+        Optional<Member> selected = memberMapper.selectById(command.getMemberId());
+        assertThat(updated).isEqualTo(1);
+        assertThat(selected).isPresent();
+        assertThat(selected.get().passwordHash()).isEqualTo("hash-after");
+        assertThat(selected.get().email()).isEqualTo("password@example.com");
+        assertThat(selected.get().name()).isEqualTo("Password User");
+        assertThat(selected.get().phone()).isEqualTo("010");
+    }
+
+    @Test
+    void searchMembersFindsByEmailNameOrPhone() {
+        insertMember("alpha@example.com", "hash-alpha", "Alpha User", "010-1111");
+        insertMember("beta@example.com", "hash-beta", "Beta User", "010-2222");
+
+        assertThat(memberMapper.searchMembers("alpha")).extracting(Member::email)
+                .containsExactly("alpha@example.com");
+        assertThat(memberMapper.searchMembers("Beta")).extracting(Member::email)
+                .containsExactly("beta@example.com");
+        assertThat(memberMapper.searchMembers("2222")).extracting(Member::email)
+                .containsExactly("beta@example.com");
+    }
+
+    @Test
     void deleteByIdRemovesMember() {
         MemberInsertCommand command = insertMember("delete@example.com", "hash-delete", "Delete User", null);
 

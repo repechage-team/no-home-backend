@@ -4,10 +4,13 @@ import com.ssafy.home.member.dto.Member;
 import com.ssafy.home.member.dto.MemberResponse;
 import com.ssafy.home.member.dto.MemberSignupRequest;
 import com.ssafy.home.member.dto.MemberUpdateRequest;
+import com.ssafy.home.member.dto.PasswordResetRequest;
 import com.ssafy.home.member.mapper.MemberInsertCommand;
 import com.ssafy.home.member.mapper.MemberMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class MemberService {
@@ -47,9 +50,37 @@ public class MemberService {
         return MemberResponse.from(member);
     }
 
+    @Transactional
+    public MemberResponse resetPassword(PasswordResetRequest request) {
+        String email = required(request == null ? null : request.email(), "email is required.");
+        String name = required(request == null ? null : request.name(), "name is required.");
+        String phone = trimToNull(request == null ? null : request.phone());
+        String newPassword = required(request == null ? null : request.newPassword(), "newPassword is required.");
+
+        Member member = memberMapper.selectByEmail(email)
+                .orElseThrow(() -> invalidCredentials());
+        if (!member.name().equals(name) || !sameNullable(member.phone(), phone)) {
+            throw invalidCredentials();
+        }
+
+        int updated = memberMapper.updatePassword(member.memberId(), passwordHasher.hash(newPassword));
+        if (updated == 0) {
+            throw new MemberException(MemberErrorCode.NOT_FOUND, "member not found.");
+        }
+        return findResponseById(member.memberId());
+    }
+
     public MemberResponse findCurrentMember(Long memberId) {
         requireMemberId(memberId);
         return findResponseById(memberId);
+    }
+
+    public List<MemberResponse> searchMembers(Long currentMemberId, String keyword) {
+        requireMemberId(currentMemberId);
+        String normalizedKeyword = required(keyword, "keyword is required.");
+        return memberMapper.searchMembers(normalizedKeyword).stream()
+                .map(MemberResponse::from)
+                .toList();
     }
 
     @Transactional
@@ -103,5 +134,14 @@ public class MemberService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static boolean sameNullable(String left, String right) {
+        String normalizedLeft = trimToNull(left);
+        String normalizedRight = trimToNull(right);
+        if (normalizedLeft == null) {
+            return normalizedRight == null;
+        }
+        return normalizedLeft.equals(normalizedRight);
     }
 }
