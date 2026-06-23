@@ -6,11 +6,16 @@ import com.ssafy.home.publicdata.client.PublicDataAptTradeXmlParser;
 import com.ssafy.home.publicdata.client.PublicDataApiKeyProvider;
 import com.ssafy.home.publicdata.dto.PublicDataImportResult;
 import com.ssafy.home.publicdata.mapper.HouseDealInsertCommand;
+import com.ssafy.home.publicdata.mapper.HouseIdMapping;
 import com.ssafy.home.publicdata.mapper.HouseUpsertCommand;
 import com.ssafy.home.publicdata.mapper.PublicDataImportMapper;
+import com.ssafy.home.publicdata.mapper.RegionIdMapping;
+import com.ssafy.home.publicdata.mapper.RegionIdentity;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -220,6 +225,41 @@ class PublicDataImportServiceTest {
         public int insertHouseDealIfAbsent(HouseDealInsertCommand command) {
             insertDealAttempts++;
             return hashes.add(command.apiRowHash()) ? 1 : 0;
+        }
+
+        @Override
+        public void upsertRegions(List<RegionIdentity> regions) {
+        }
+
+        @Override
+        public List<RegionIdMapping> selectRegionIds(List<RegionIdentity> regions) {
+            return regions.stream()
+                    .map(region -> new RegionIdMapping(7L, region.lawdCd(), region.umdNm()))
+                    .toList();
+        }
+
+        @Override
+        public void upsertHouses(List<HouseUpsertCommand> commands) {
+        }
+
+        @Override
+        public List<HouseIdMapping> selectHouseIds(List<HouseUpsertCommand> commands) {
+            List<HouseIdMapping> mappings = new ArrayList<>();
+            long id = 11L;
+            for (HouseUpsertCommand command : commands) {
+                mappings.add(new HouseIdMapping(id++, command.sggCd(), command.umdNm(), command.jibun(),
+                        command.aptNm(), command.buildYear()));
+            }
+            return mappings;
+        }
+
+        @Override
+        public int insertHouseDealsIfAbsent(List<HouseDealInsertCommand> commands) {
+            int inserted = 0;
+            for (HouseDealInsertCommand command : commands) {
+                inserted += insertHouseDealIfAbsent(command);
+            }
+            return inserted;
         }
     }
 }

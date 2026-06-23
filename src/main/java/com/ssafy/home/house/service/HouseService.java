@@ -16,6 +16,7 @@ import com.ssafy.home.house.mapper.HouseMapper;
 import com.ssafy.home.publicdata.dto.PublicDataImportResult;
 import com.ssafy.home.publicdata.service.PublicDataApiException;
 import com.ssafy.home.publicdata.service.AptRentImportCommandFactory;
+import com.ssafy.home.publicdata.service.PublicDataLiveSearchService;
 import com.ssafy.home.publicdata.service.PublicDataAptRentImportService;
 import com.ssafy.home.publicdata.service.PublicDataImportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,7 @@ public class HouseService {
     private final HouseMapper houseMapper;
     private final PublicDataImportService publicDataImportService;
     private final PublicDataAptRentImportService publicDataAptRentImportService;
+    private final PublicDataLiveSearchService publicDataLiveSearchService;
     private final SeoulLawdCodeResolver seoulLawdCodeResolver;
 
     @Autowired
@@ -62,16 +64,18 @@ public class HouseService {
             HouseMapper houseMapper,
             PublicDataImportService publicDataImportService,
             PublicDataAptRentImportService publicDataAptRentImportService,
+            PublicDataLiveSearchService publicDataLiveSearchService,
             SeoulLawdCodeResolver seoulLawdCodeResolver
     ) {
         this.houseMapper = houseMapper;
         this.publicDataImportService = publicDataImportService;
         this.publicDataAptRentImportService = publicDataAptRentImportService;
+        this.publicDataLiveSearchService = publicDataLiveSearchService;
         this.seoulLawdCodeResolver = seoulLawdCodeResolver;
     }
 
     HouseService(HouseMapper houseMapper) {
-        this(houseMapper, null, null, new SeoulLawdCodeResolver());
+        this(houseMapper, null, null, null, new SeoulLawdCodeResolver());
     }
 
     HouseService(
@@ -79,7 +83,7 @@ public class HouseService {
             PublicDataImportService publicDataImportService,
             SeoulLawdCodeResolver seoulLawdCodeResolver
     ) {
-        this(houseMapper, publicDataImportService, null, seoulLawdCodeResolver);
+        this(houseMapper, publicDataImportService, null, null, seoulLawdCodeResolver);
     }
 
     public List<RegionResponse> findRegions(String lawdCd) {
@@ -237,7 +241,15 @@ public class HouseService {
             throw new IllegalArgumentException("At least one search condition is required.");
         }
 
-        AutoImportMetadata autoImportMetadata = ensureCoverage(condition, autoImport);
+        Optional<LiveCoverageRequest> liveCoverage = liveCoverageRequest(condition, autoImport);
+        if (liveCoverage.isPresent()) {
+            LiveCoverageRequest request = liveCoverage.get();
+            return publicDataLiveSearchService.search(request.lawdCds(), request.dealYmds(), condition);
+        }
+
+        AutoImportMetadata autoImportMetadata = publicDataLiveSearchService == null
+                ? ensureCoverage(condition, autoImport)
+                : AutoImportMetadata.notAttempted();
         HouseSearchPageResponse pageResponse = searchDb(condition);
         return new HouseSearchPageResponse(
                 pageResponse.items(),
@@ -306,7 +318,16 @@ public class HouseService {
             throw new IllegalArgumentException("At least one search condition is required.");
         }
 
-        ensureCoverage(condition, autoImport);
+        Optional<LiveCoverageRequest> liveCoverage = liveCoverageRequest(condition, autoImport);
+        if (liveCoverage.isPresent()) {
+            LiveCoverageRequest request = liveCoverage.get();
+            return publicDataLiveSearchService.priceRange(request.lawdCds(), request.dealYmds(), condition);
+        }
+
+        if (publicDataLiveSearchService == null) {
+            ensureCoverage(condition, autoImport);
+        }
+
         HouseDealPriceRangeResponse priceRange = houseMapper.selectHouseDealPriceRange(condition);
         return priceRange == null ? new HouseDealPriceRangeResponse(null, null, null, null, null, null) : priceRange;
     }
@@ -390,6 +411,50 @@ public class HouseService {
             }
         }
         return new AutoImportMetadata(!importedRanges.isEmpty() || !skippedRanges.isEmpty(), importedRanges, skippedRanges);
+    }
+
+    private Optional<LiveCoverageRequest> liveCoverageRequest(HouseSearchCondition condition, Boolean autoImport) {
+        if (!Boolean.TRUE.equals(autoImport) || publicDataLiveSearchService == null || !canAutoImport(condition)) {
+            return Optional.empty();
+        }
+
+        List<String> lawdCds = seoulLawdCodeResolver.resolveLawdCds(
+                condition.lawdCd(), condition.sido(), condition.sigungu()
+        );
+        List<String> dealYmds = autoImportDealYmds(condition);
+        if (lawdCds.isEmpty() || dealYmds.isEmpty()) {
+            return Optional.empty();
+        }
+
+        for (String lawdCd : lawdCds) {
+            for (String dealYmd : dealYmds) {
+                if (shouldImportSale(condition.dealMode())
+                        && !hasCompleteCoverage(lawdCd, dealYmd, SOURCE_API, HOUSE_TYPE, DEAL_TYPE)) {
+                    return Optional.of(new LiveCoverageRequest(lawdCds, dealYmds));
+                }
+                if (shouldImportRent(condition.dealMode())
+                        && !hasCompleteCoverage(lawdCd, dealYmd,
+                        AptRentImportCommandFactory.SOURCE_API,
+                        AptRentImportCommandFactory.HOUSE_TYPE,
+                        AptRentImportCommandFactory.DEAL_TYPE)) {
+                    return Optional.of(new LiveCoverageRequest(lawdCds, dealYmds));
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean hasCompleteCoverage(
+            String lawdCd,
+            String dealYmd,
+            String sourceApi,
+            String houseType,
+            String dealType
+    ) {
+        return findImportBatch(sourceApi, lawdCd, dealYmd, houseType, dealType)
+                .map(this::isCompleteCoverage)
+                .orElse(false);
     }
 
     private static List<String> autoImportDealYmds(HouseSearchCondition condition) {
@@ -648,6 +713,9 @@ public class HouseService {
         private static AutoImportMetadata notAttempted() {
             return new AutoImportMetadata(false, List.of(), List.of());
         }
+    }
+
+    private record LiveCoverageRequest(List<String> lawdCds, List<String> dealYmds) {
     }
 
     @FunctionalInterface
