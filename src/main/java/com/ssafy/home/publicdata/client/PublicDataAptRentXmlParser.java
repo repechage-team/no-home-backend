@@ -1,0 +1,91 @@
+package com.ssafy.home.publicdata.client;
+
+import com.ssafy.home.publicdata.dto.AptRentApiItem;
+import com.ssafy.home.publicdata.dto.AptRentApiResponse;
+import org.springframework.stereotype.Component;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+public class PublicDataAptRentXmlParser {
+
+    public AptRentApiResponse parse(String xml) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            Document document = factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+            Element root = document.getDocumentElement();
+            String resultCode = firstText(root, "resultCode");
+            String resultMsg = firstText(root, "resultMsg");
+            if (resultCode == null) {
+                resultCode = firstText(root, "returnReasonCode");
+                resultMsg = firstText(root, "returnAuthMsg");
+            }
+            int totalCount = parseInt(text(root, "totalCount"), 0);
+            NodeList itemNodes = document.getElementsByTagName("item");
+            List<AptRentApiItem> items = new ArrayList<>();
+            for (int index = 0; index < itemNodes.getLength(); index++) {
+                Element item = (Element) itemNodes.item(index);
+                items.add(new AptRentApiItem(
+                        text(item, "sggCd"),
+                        text(item, "umdNm"),
+                        text(item, "jibun"),
+                        text(item, "aptNm"),
+                        text(item, "aptSeq"),
+                        text(item, "buildYear"),
+                        text(item, "dealYear"),
+                        text(item, "dealMonth"),
+                        text(item, "dealDay"),
+                        text(item, "deposit"),
+                        text(item, "monthlyRent"),
+                        text(item, "excluUseAr"),
+                        text(item, "floor"),
+                        text(item, "contractTerm"),
+                        text(item, "contractType"),
+                        text(item, "useRRRight"),
+                        text(item, "preDeposit"),
+                        text(item, "preMonthlyRent"),
+                        text(item, "roadnm"),
+                        text(item, "roadnmsggcd"),
+                        text(item, "roadnmcd"),
+                        text(item, "roadnmseq"),
+                        text(item, "roadnmbcd"),
+                        text(item, "roadnmbonbun"),
+                        text(item, "roadnmbubun")
+                ));
+            }
+            return new AptRentApiResponse(resultCode, resultMsg, totalCount, items);
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Failed to parse public data apartment rent XML response", exception);
+        }
+    }
+
+    private static String text(Element element, String tagName) {
+        NodeList nodes = element.getElementsByTagName(tagName);
+        if (nodes.getLength() == 0 || nodes.item(0).getTextContent() == null) {
+            return null;
+        }
+        return nodes.item(0).getTextContent().trim();
+    }
+
+    private static String firstText(Element element, String tagName) {
+        String value = text(element, tagName);
+        return value == null || value.isBlank() ? null : value;
+    }
+
+    private static int parseInt(String value, int defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return Integer.parseInt(value.trim());
+    }
+}

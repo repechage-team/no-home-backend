@@ -217,6 +217,33 @@ class HouseServiceTest {
     }
 
     @Test
+    void searchHouseDealsAutoImportsEveryMonthInDealYmdRange() {
+        StubHouseMapper mapper = new StubHouseMapper();
+        PublicDataImportService importService = mock(PublicDataImportService.class);
+        when(importService.importAptTrades("11590", "202601"))
+                .thenReturn(new PublicDataImportResult("RTMSDataSvcAptTrade", "11590", "202601",
+                        "success", 1, 1, 0, false, "import completed"));
+        when(importService.importAptTrades("11590", "202602"))
+                .thenReturn(new PublicDataImportResult("RTMSDataSvcAptTrade", "11590", "202602",
+                        "success", 1, 1, 0, false, "import completed"));
+        when(importService.importAptTrades("11590", "202603"))
+                .thenReturn(new PublicDataImportResult("RTMSDataSvcAptTrade", "11590", "202603",
+                        "success", 1, 1, 0, false, "import completed"));
+        HouseService service = new HouseService(mapper, importService, new SeoulLawdCodeResolver());
+
+        HouseSearchPageResponse response = service.searchHouseDeals(
+                "11590", null, null, null, null, null, "202601", "202603", 1, 20, true,
+                "latest", null, null
+        );
+
+        verify(importService).importAptTrades("11590", "202601");
+        verify(importService).importAptTrades("11590", "202602");
+        verify(importService).importAptTrades("11590", "202603");
+        assertThat(response.autoImportAttempted()).isTrue();
+        assertThat(response.importedRanges()).hasSize(3);
+    }
+
+    @Test
     void successBatchWithLowerImportedAndSkippedCountIsNotCompleteCoverage() {
         StubHouseMapper mapper = new StubHouseMapper();
         mapper.importBatches = Map.of("11590:202605", undercountSuccessBatch("11590", "202605"));

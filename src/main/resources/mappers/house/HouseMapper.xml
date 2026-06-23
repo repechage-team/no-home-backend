@@ -44,9 +44,15 @@
             h.jibun,
             hd.lawd_cd,
             hd.deal_ymd,
+            hd.deal_type,
+            hd.rent_type,
             hd.deal_date,
             hd.deal_amount,
             hd.deal_amount_manwon,
+            hd.deposit,
+            hd.deposit_manwon,
+            hd.monthly_rent,
+            hd.monthly_rent_manwon,
             hd.exclu_use_ar,
             hd.floor
         FROM house_deals hd
@@ -61,7 +67,23 @@
         INNER JOIN houses h ON h.house_id = hd.house_id
         INNER JOIN regions r ON r.region_id = h.region_id
         WHERE hd.house_type = 'apartment'
+        <choose>
+            <when test="condition.dealMode == 'jeonse'">
+          AND hd.deal_type = 'jeonse'
+            </when>
+            <when test="condition.dealMode == 'monthly'">
+          AND hd.deal_type = 'monthly'
+            </when>
+            <when test="condition.dealMode == 'rent'">
+          AND hd.deal_type IN ('jeonse', 'monthly')
+            </when>
+            <when test="condition.dealMode == 'all'">
+          AND hd.deal_type IN ('sale', 'jeonse', 'monthly')
+            </when>
+            <otherwise>
           AND hd.deal_type = 'sale'
+            </otherwise>
+        </choose>
         <if test="condition.lawdCd != null">
           AND hd.lawd_cd = #{condition.lawdCd}
         </if>
@@ -95,6 +117,18 @@
         <if test="condition.maxPrice != null">
           AND hd.deal_amount_manwon &lt;= #{condition.maxPrice}
         </if>
+        <if test="condition.minDeposit != null">
+          AND hd.deposit_manwon &gt;= #{condition.minDeposit}
+        </if>
+        <if test="condition.maxDeposit != null">
+          AND hd.deposit_manwon &lt;= #{condition.maxDeposit}
+        </if>
+        <if test="condition.minMonthlyRent != null">
+          AND hd.monthly_rent_manwon &gt;= #{condition.minMonthlyRent}
+        </if>
+        <if test="condition.maxMonthlyRent != null">
+          AND hd.monthly_rent_manwon &lt;= #{condition.maxMonthlyRent}
+        </if>
     </sql>
 
     <select id="searchHouseDeals" resultType="com.ssafy.home.house.dto.HouseSearchResultResponse">
@@ -109,11 +143,26 @@
             h.build_year,
             hd.lawd_cd,
             hd.deal_ymd,
+            hd.deal_type,
+            hd.rent_type,
             hd.deal_date,
             hd.deal_amount,
             hd.deal_amount_manwon,
+            hd.deposit,
+            hd.deposit_manwon,
+            hd.monthly_rent,
+            hd.monthly_rent_manwon,
             hd.exclu_use_ar,
             hd.floor,
+            hd.contract_term,
+            hd.contract_type,
+            hd.use_rr_right,
+            hd.pre_deposit,
+            hd.pre_deposit_manwon,
+            hd.pre_monthly_rent,
+            hd.pre_monthly_rent_manwon,
+            hd.roadnm,
+            hd.apt_seq,
             h.lat,
             h.lng
         <include refid="houseDealSearchFromWhere"/>
@@ -127,6 +176,24 @@
             </when>
             <when test="condition.sort == 'priceAsc'">
                 ORDER BY hd.deal_amount_manwon IS NULL, hd.deal_amount_manwon ASC, hd.deal_date DESC, hd.deal_id DESC
+            </when>
+            <when test="condition.sort == 'depositDesc'">
+                ORDER BY hd.deposit_manwon IS NULL, hd.deposit_manwon DESC, hd.deal_date DESC, hd.deal_id DESC
+            </when>
+            <when test="condition.sort == 'depositAsc'">
+                ORDER BY hd.deposit_manwon IS NULL, hd.deposit_manwon ASC, hd.deal_date DESC, hd.deal_id DESC
+            </when>
+            <when test="condition.sort == 'monthlyRentDesc'">
+                ORDER BY hd.monthly_rent_manwon IS NULL, hd.monthly_rent_manwon DESC, hd.deal_date DESC, hd.deal_id DESC
+            </when>
+            <when test="condition.sort == 'monthlyRentAsc'">
+                ORDER BY hd.monthly_rent_manwon IS NULL, hd.monthly_rent_manwon ASC, hd.deal_date DESC, hd.deal_id DESC
+            </when>
+            <when test="condition.sort == 'areaDesc'">
+                ORDER BY hd.exclu_use_ar IS NULL, hd.exclu_use_ar DESC, hd.deal_date DESC, hd.deal_id DESC
+            </when>
+            <when test="condition.sort == 'areaAsc'">
+                ORDER BY hd.exclu_use_ar IS NULL, hd.exclu_use_ar ASC, hd.deal_date DESC, hd.deal_id DESC
             </when>
             <otherwise>
                 ORDER BY hd.deal_date DESC, hd.deal_id DESC
@@ -144,7 +211,11 @@
     <select id="selectHouseDealPriceRange" resultType="com.ssafy.home.house.dto.HouseDealPriceRangeResponse">
         SELECT
             MIN(hd.deal_amount_manwon) AS min_deal_amount_manwon,
-            MAX(hd.deal_amount_manwon) AS max_deal_amount_manwon
+            MAX(hd.deal_amount_manwon) AS max_deal_amount_manwon,
+            MIN(hd.deposit_manwon) AS min_deposit_manwon,
+            MAX(hd.deposit_manwon) AS max_deposit_manwon,
+            MIN(hd.monthly_rent_manwon) AS min_monthly_rent_manwon,
+            MAX(hd.monthly_rent_manwon) AS max_monthly_rent_manwon
         <include refid="houseDealSearchFromWhere"/>
     </select>
 

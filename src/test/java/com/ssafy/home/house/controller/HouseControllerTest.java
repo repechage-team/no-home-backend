@@ -25,7 +25,8 @@ class HouseControllerTest {
     @Test
     void searchHousesReturnsBadRequestWhenNoSearchConditionExists() throws Exception {
         HouseService houseService = mock(HouseService.class);
-        when(houseService.searchHouseDeals(null, null, null, null, null, null, null, null, null, null, true, null, null, null))
+        when(houseService.searchHouseDeals(null, null, null, null, null, null, null, null, null, null, true,
+                null, null, null, null, null, null, null, null))
                 .thenThrow(new IllegalArgumentException("At least one search condition is required."));
         MockMvc mockMvc = standaloneSetup(new HouseController(houseService)).build();
 
@@ -40,7 +41,7 @@ class HouseControllerTest {
         HouseService houseService = mock(HouseService.class);
         when(houseService.searchHouseDeals(
                 eq("11590"), eq(null), eq(null), eq(null), eq("River"), eq("202605"), eq(null), eq(null), eq(1), eq(20), eq(true),
-                eq("priceDesc"), eq(100000), eq(300000)
+                eq("priceDesc"), eq(100000), eq(300000), eq(null), eq(null), eq(null), eq(null), eq(null)
         )).thenReturn(new HouseSearchPageResponse(List.of(new HouseSearchResultResponse(
                 1L, 2L, "River Apt", "Seoul", "Dongjak-gu", "Sangdo-dong", "335", 2018,
                 "11590", "202605", LocalDate.of(2026, 5, 20), "205,000", 205000,
@@ -74,7 +75,7 @@ class HouseControllerTest {
     void housePriceRangeReturnsCurrentConditionRange() throws Exception {
         HouseService houseService = mock(HouseService.class);
         when(houseService.findHouseDealPriceRange(
-                eq("11590"), eq(null), eq(null), eq(null), eq(null), eq("202605"), eq(null), eq(null), eq(false)
+                eq("11590"), eq(null), eq(null), eq(null), eq(null), eq("202605"), eq(null), eq(null), eq(false), eq(null)
         )).thenReturn(new HouseDealPriceRangeResponse(100000, 300000));
         MockMvc mockMvc = standaloneSetup(new HouseController(houseService)).build();
 
@@ -93,7 +94,8 @@ class HouseControllerTest {
         HouseService houseService = mock(HouseService.class);
         when(houseService.searchHouseDeals(
                 eq("11680"), eq(null), eq(null), eq(null), eq(null), eq("202605"),
-                eq(null), eq(null), eq(null), eq(null), eq(true), eq(null), eq(null), eq(null)
+                eq(null), eq(null), eq(null), eq(null), eq(true), eq(null), eq(null), eq(null),
+                eq(null), eq(null), eq(null), eq(null), eq(null)
         )).thenThrow(new AutoImportException(
                 AutoImportException.Reason.KEY_INVALID,
                 "Auto import failed for lawdCd=11680, dealYmd=202605",
@@ -113,7 +115,7 @@ class HouseControllerTest {
         HouseService houseService = mock(HouseService.class);
         when(houseService.findHouseDealPriceRange(
                 eq("11680"), eq(null), eq(null), eq(null), eq(null), eq("202605"),
-                eq(null), eq(null), eq(true)
+                eq(null), eq(null), eq(true), eq(null)
         )).thenThrow(new AutoImportException(
                 AutoImportException.Reason.TIMEOUT,
                 "Auto import failed for lawdCd=11680, dealYmd=202605",

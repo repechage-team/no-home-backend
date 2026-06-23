@@ -47,17 +47,22 @@ public class HouseController {
             @RequestParam(required = false) String dealYmd,
             @RequestParam(required = false) String startDealYmd,
             @RequestParam(required = false) String endDealYmd,
+            @RequestParam(required = false) String dealMode,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false, defaultValue = "true") Boolean autoImport,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) Integer minPrice,
-            @RequestParam(required = false) Integer maxPrice
+            @RequestParam(required = false) Integer maxPrice,
+            @RequestParam(required = false) Integer minDeposit,
+            @RequestParam(required = false) Integer maxDeposit,
+            @RequestParam(required = false) Integer minMonthlyRent,
+            @RequestParam(required = false) Integer maxMonthlyRent
     ) {
         try {
             HouseSearchPageResponse result = houseService.searchHouseDeals(
                     lawdCd, sido, sigungu, umdNm, aptName, dealYmd, startDealYmd, endDealYmd, page, size, autoImport,
-                    sort, minPrice, maxPrice
+                    sort, minPrice, maxPrice, minDeposit, maxDeposit, minMonthlyRent, maxMonthlyRent, dealMode
             );
             return ResponseEntity.ok(ApiResponse.ok(result));
         } catch (IllegalArgumentException e) {
@@ -78,11 +83,12 @@ public class HouseController {
             @RequestParam(required = false) String dealYmd,
             @RequestParam(required = false) String startDealYmd,
             @RequestParam(required = false) String endDealYmd,
+            @RequestParam(required = false) String dealMode,
             @RequestParam(required = false, defaultValue = "true") Boolean autoImport
     ) {
         try {
             HouseDealPriceRangeResponse result = houseService.findHouseDealPriceRange(
-                    lawdCd, sido, sigungu, umdNm, aptName, dealYmd, startDealYmd, endDealYmd, autoImport
+                    lawdCd, sido, sigungu, umdNm, aptName, dealYmd, startDealYmd, endDealYmd, autoImport, dealMode
             );
             return ResponseEntity.ok(ApiResponse.ok(result));
         } catch (IllegalArgumentException e) {

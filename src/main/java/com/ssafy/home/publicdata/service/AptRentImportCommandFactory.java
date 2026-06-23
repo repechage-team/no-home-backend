@@ -2,7 +2,7 @@ package com.ssafy.home.publicdata.service;
 
 import com.ssafy.home.house.util.ApiRowHashGenerator;
 import com.ssafy.home.house.util.ApiRowHashInput;
-import com.ssafy.home.publicdata.dto.AptTradeApiItem;
+import com.ssafy.home.publicdata.dto.AptRentApiItem;
 import com.ssafy.home.publicdata.mapper.HouseDealInsertCommand;
 import com.ssafy.home.publicdata.mapper.HouseUpsertCommand;
 import org.springframework.stereotype.Component;
@@ -13,13 +13,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Component
-public class AptTradeImportCommandFactory {
+public class AptRentImportCommandFactory {
 
-    public static final String SOURCE_API = "RTMSDataSvcAptTrade";
+    public static final String SOURCE_API = "RTMSDataSvcAptRent";
     public static final String HOUSE_TYPE = "apartment";
-    public static final String DEAL_TYPE = "sale";
+    public static final String DEAL_TYPE = "rent";
+    public static final String RENT_TYPE_JEONSE = "jeonse";
+    public static final String RENT_TYPE_MONTHLY = "monthly";
 
-    public HouseUpsertCommand toHouseCommand(String lawdCd, Long regionId, AptTradeApiItem item) {
+    public HouseUpsertCommand toHouseCommand(String lawdCd, Long regionId, AptRentApiItem item) {
         return new HouseUpsertCommand(
                 regionId,
                 defaultIfBlank(trim(item.sggCd()), lawdCd),
@@ -30,11 +32,16 @@ public class AptTradeImportCommandFactory {
         );
     }
 
-    public HouseDealInsertCommand toDealCommand(String lawdCd, String dealYmd, Long houseId, AptTradeApiItem item) {
+    public HouseDealInsertCommand toDealCommand(String lawdCd, String dealYmd, Long houseId, AptRentApiItem item) {
         Integer dealYear = parseInteger(item.dealYear());
         Integer dealMonth = parseInteger(item.dealMonth());
         Integer dealDay = parseInteger(item.dealDay());
-        String dealAmount = trim(item.dealAmount());
+        String deposit = trim(item.deposit());
+        String monthlyRent = trim(item.monthlyRent());
+        Integer monthlyRentManwon = parseAmountManwon(monthlyRent);
+        String rentType = monthlyRentManwon != null && monthlyRentManwon > 0
+                ? RENT_TYPE_MONTHLY
+                : RENT_TYPE_JEONSE;
         String apiRowHash = ApiRowHashGenerator.generate(new ApiRowHashInput(
                 SOURCE_API,
                 lawdCd,
@@ -45,8 +52,8 @@ public class AptTradeImportCommandFactory {
                 item.dealYear(),
                 item.dealMonth(),
                 item.dealDay(),
-                item.dealAmount(),
-                null,
+                item.deposit(),
+                item.monthlyRent(),
                 item.excluUseAr(),
                 item.floor()
         ));
@@ -55,29 +62,20 @@ public class AptTradeImportCommandFactory {
                 SOURCE_API,
                 lawdCd,
                 dealYmd,
-                DEAL_TYPE,
+                rentType,
                 dealYear,
                 dealMonth,
                 dealDay,
                 LocalDate.of(dealYear, dealMonth, dealDay),
-                dealAmount,
-                parseAmountManwon(dealAmount),
-                null,
-                null,
-                null,
-                null,
-                null,
+                deposit,
+                parseAmountManwon(deposit),
+                rentType,
+                deposit,
+                parseAmountManwon(deposit),
+                monthlyRent,
+                monthlyRentManwon,
                 parseBigDecimal(item.excluUseAr()),
                 parseInteger(item.floor()),
-                trim(item.aptDong()),
-                trim(item.buyerGbn()),
-                trim(item.slerGbn()),
-                trim(item.dealingGbn()),
-                trim(item.estateAgentSggNm()),
-                trim(item.cdealType()),
-                trim(item.cdealDay()),
-                trim(item.rgstDate()),
-                trim(item.landLeaseholdGbn()),
                 null,
                 null,
                 null,
@@ -87,24 +85,42 @@ public class AptTradeImportCommandFactory {
                 null,
                 null,
                 null,
+                trim(item.contractTerm()),
+                trim(item.contractType()),
+                trim(item.useRRRight()),
+                trim(item.preDeposit()),
+                parseAmountManwon(item.preDeposit()),
+                trim(item.preMonthlyRent()),
+                parseAmountManwon(item.preMonthlyRent()),
+                trim(item.roadnm()),
+                trim(item.aptSeq()),
                 apiRowHash,
                 toRawJson(item)
         );
     }
 
-    private static String toRawJson(AptTradeApiItem item) {
+    private static String toRawJson(AptRentApiItem item) {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("sggCd", item.sggCd());
         values.put("umdNm", item.umdNm());
         values.put("jibun", item.jibun());
         values.put("aptNm", item.aptNm());
+        values.put("aptSeq", item.aptSeq());
         values.put("buildYear", item.buildYear());
         values.put("dealYear", item.dealYear());
         values.put("dealMonth", item.dealMonth());
         values.put("dealDay", item.dealDay());
-        values.put("dealAmount", item.dealAmount());
+        values.put("deposit", item.deposit());
+        values.put("monthlyRent", item.monthlyRent());
         values.put("excluUseAr", item.excluUseAr());
         values.put("floor", item.floor());
+        values.put("contractTerm", item.contractTerm());
+        values.put("contractType", item.contractType());
+        values.put("useRRRight", item.useRRRight());
+        values.put("preDeposit", item.preDeposit());
+        values.put("preMonthlyRent", item.preMonthlyRent());
+        values.put("roadnm", item.roadnm());
+        values.put("aptSeq", item.aptSeq());
         StringBuilder builder = new StringBuilder("{");
         boolean first = true;
         for (Map.Entry<String, String> entry : values.entrySet()) {
