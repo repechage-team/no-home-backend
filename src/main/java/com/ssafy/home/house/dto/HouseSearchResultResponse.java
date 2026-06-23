@@ -35,7 +35,9 @@ public record HouseSearchResultResponse(
         String roadnm,
         String aptSeq,
         BigDecimal lat,
-        BigDecimal lng
+        BigDecimal lng,
+        String resultKey,
+        String apiRowHash
 ) {
     public HouseSearchResultResponse(
             Long dealId,
@@ -58,6 +60,6 @@ public record HouseSearchResultResponse(
     ) {
         this(dealId, houseId, aptNm, sido, sigungu, umdNm, jibun, buildYear, lawdCd, dealYmd, "sale", null,
                 dealDate, dealAmount, dealAmountManwon, null, null, null, null, excluUseAr, floor,
-                null, null, null, null, null, null, null, null, null, lat, lng);
+                null, null, null, null, null, null, null, null, null, lat, lng, null, null);
     }
 }

@@ -69,11 +69,29 @@
         ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP
     </insert>
 
+    <insert id="upsertRegions">
+        INSERT INTO regions (lawd_cd, sido, sigungu, umd_nm)
+        VALUES
+        <foreach collection="regions" item="region" separator=",">
+            (#{region.lawdCd}, #{region.sido}, #{region.sigungu}, #{region.umdNm})
+        </foreach>
+        ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP
+    </insert>
+
     <select id="selectRegionId" resultType="long">
         SELECT region_id
         FROM regions
         WHERE lawd_cd = #{lawdCd}
           AND umd_nm = #{umdNm}
+    </select>
+
+    <select id="selectRegionIds" resultType="com.ssafy.home.publicdata.mapper.RegionIdMapping">
+        SELECT region_id, lawd_cd, umd_nm
+        FROM regions
+        WHERE (lawd_cd, umd_nm) IN
+        <foreach collection="regions" item="region" open="(" separator="," close=")">
+            (#{region.lawdCd}, #{region.umdNm})
+        </foreach>
     </select>
 
     <insert id="upsertHouse">
@@ -91,6 +109,24 @@
             updated_at = CURRENT_TIMESTAMP
     </insert>
 
+    <insert id="upsertHouses">
+        INSERT INTO houses (region_id, sgg_cd, umd_nm, jibun, apt_nm, build_year)
+        VALUES
+        <foreach collection="commands" item="command" separator=",">
+            (
+                #{command.regionId},
+                #{command.sggCd},
+                #{command.umdNm},
+                #{command.jibun},
+                #{command.aptNm},
+                #{command.buildYear}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            region_id = VALUES(region_id),
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
     <select id="selectHouseId" resultType="long">
         SELECT house_id
         FROM houses
@@ -102,6 +138,24 @@
               (build_year IS NULL AND #{command.buildYear} IS NULL)
               OR build_year = #{command.buildYear}
           )
+    </select>
+
+    <select id="selectHouseIds" resultType="com.ssafy.home.publicdata.mapper.HouseIdMapping">
+        SELECT house_id, sgg_cd, umd_nm, jibun, apt_nm, build_year
+        FROM houses
+        WHERE
+        <foreach collection="commands" item="command" separator=" OR ">
+            (
+                sgg_cd = #{command.sggCd}
+                AND umd_nm = #{command.umdNm}
+                AND jibun = #{command.jibun}
+                AND apt_nm = #{command.aptNm}
+                AND (
+                    (build_year IS NULL AND #{command.buildYear} IS NULL)
+                    OR build_year = #{command.buildYear}
+                )
+            )
+        </foreach>
     </select>
 
     <insert id="insertHouseDealIfAbsent">
@@ -125,5 +179,31 @@
             #{command.preMonthlyRent}, #{command.preMonthlyRentManwon}, #{command.roadnm}, #{command.aptSeq},
             #{command.apiRowHash}, #{command.rawResponse}
         )
+    </insert>
+
+    <insert id="insertHouseDealsIfAbsent">
+        INSERT IGNORE INTO house_deals (
+            house_id, source_api, lawd_cd, deal_ymd, house_type, deal_type,
+            deal_year, deal_month, deal_day, deal_date, deal_amount, deal_amount_manwon,
+            rent_type, deposit, deposit_manwon, monthly_rent, monthly_rent_manwon,
+            exclu_use_ar, floor, apt_dong, buyer_gbn, sler_gbn, dealing_gbn,
+            estate_agent_sgg_nm, cdeal_type, cdeal_day, rgst_date, land_leasehold_gbn,
+            contract_term, contract_type, use_rr_right, pre_deposit, pre_deposit_manwon,
+            pre_monthly_rent, pre_monthly_rent_manwon, roadnm, apt_seq,
+            api_row_hash, raw_response
+        )
+        VALUES
+        <foreach collection="commands" item="command" separator=",">
+            (
+                #{command.houseId}, #{command.sourceApi}, #{command.lawdCd}, #{command.dealYmd}, 'apartment', #{command.dealType},
+                #{command.dealYear}, #{command.dealMonth}, #{command.dealDay}, #{command.dealDate}, #{command.dealAmount}, #{command.dealAmountManwon},
+                #{command.rentType}, #{command.deposit}, #{command.depositManwon}, #{command.monthlyRent}, #{command.monthlyRentManwon},
+                #{command.excluUseAr}, #{command.floor}, #{command.aptDong}, #{command.buyerGbn}, #{command.slerGbn}, #{command.dealingGbn},
+                #{command.estateAgentSggNm}, #{command.cdealType}, #{command.cdealDay}, #{command.rgstDate}, #{command.landLeaseholdGbn},
+                #{command.contractTerm}, #{command.contractType}, #{command.useRRRight}, #{command.preDeposit}, #{command.preDepositManwon},
+                #{command.preMonthlyRent}, #{command.preMonthlyRentManwon}, #{command.roadnm}, #{command.aptSeq},
+                #{command.apiRowHash}, #{command.rawResponse}
+            )
+        </foreach>
     </insert>
 </mapper>

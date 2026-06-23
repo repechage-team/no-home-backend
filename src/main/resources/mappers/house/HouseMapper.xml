@@ -164,7 +164,9 @@
             hd.roadnm,
             hd.apt_seq,
             h.lat,
-            h.lng
+            h.lng,
+            hd.api_row_hash AS result_key,
+            hd.api_row_hash AS api_row_hash
         <include refid="houseDealSearchFromWhere"/>
         <include refid="houseDealPriceFilter"/>
         <choose>

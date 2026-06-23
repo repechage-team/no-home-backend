@@ -2,6 +2,7 @@ package com.ssafy.home.publicdata.mapper;
 
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PublicDataImportMapper {
@@ -59,4 +60,14 @@ public interface PublicDataImportMapper {
     Optional<Long> selectHouseId(@Param("command") HouseUpsertCommand command);
 
     int insertHouseDealIfAbsent(@Param("command") HouseDealInsertCommand command);
+
+    void upsertRegions(@Param("regions") List<RegionIdentity> regions);
+
+    List<RegionIdMapping> selectRegionIds(@Param("regions") List<RegionIdentity> regions);
+
+    void upsertHouses(@Param("commands") List<HouseUpsertCommand> commands);
+
+    List<HouseIdMapping> selectHouseIds(@Param("commands") List<HouseUpsertCommand> commands);
+
+    int insertHouseDealsIfAbsent(@Param("commands") List<HouseDealInsertCommand> commands);
 }
