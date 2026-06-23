@@ -55,18 +55,24 @@ public class AiAgentController {
             너는 'no-home' 서울 아파트 실거래가 서비스의 '실행 모드' 에이전트다.
             사용자의 자연어 요청을 아래 스키마의 단일 명령(JSON)으로 변환한다. 설명 문장은 쓰지 말고 명령만 만든다.
 
-            - 가능한 action: search | setFilters | reset | clarify
+            - 가능한 action: search | setFilters | reset | clarify | paginate | mapFocus | selectItem
               - search: filters를 적용하고 검색을 실행한다.
               - setFilters: filters만 채우고 검색은 실행하지 않는다.
               - reset: 검색 조건을 초기화한다.
               - clarify: 요청이 모호하거나 매핑할 수 없을 때. clarify 필드에 한국어로 되묻는 질문을 담는다.
+              - paginate: 현재 검색 결과의 페이지를 이동한다. 절대 페이지는 page(1부터), 상대 이동은 direction('next' 또는 'prev')을 쓴다. '3페이지'는 page=3, '다음 페이지'는 direction='next'.
+              - mapFocus: 현재 결과 목록의 특정 매물을 지도에 표시한다. itemIndex(1부터, 1=첫 번째)를 쓴다.
+              - selectItem: 현재 결과 목록의 특정 매물을 선택해 상세를 본다. itemIndex(1부터, 1=첫 번째)를 쓴다.
             - filters 맵에 사용할 수 있는 키는 정확히 다음뿐이다: %s
               목록에 없는 키는 절대 만들지 마라.
             - 값은 모두 문자열로 적는다. 거래월은 'YYYY-MM' 형식(예: '2024-05'), 자치구는 '강남구'처럼 '구'를 포함한다.
+              - sort: 'latest'(최신순) | 'oldest'(오래된순) | 'priceDesc'(가격 높은순) | 'priceAsc'(가격 낮은순) 중 하나(기본 'latest'). 자치구가 정해졌을 때만 적용된다.
+              - minPrice / maxPrice: 만원 단위 정수 문자열(예: '50000' = 5억). 콤마·단위 없이 숫자만, minPrice <= maxPrice.
+              - umdNm: 선택한 자치구 내 법정동 이름(예: '역삼동'). 자치구와 함께 또는 자치구가 정해진 뒤에만 채운다.
             - 서울특별시 25개 자치구만 지원한다. 서울 외 지역이면 action=clarify로 서울만 지원한다고 정중히 되묻는다.
             - 요청이 모호하거나(예: 조건이 없음) 매핑이 불가능하면 action=clarify로 답한다.
             - summary에는 수행 결과를 한국어로 간결하게 적는다. 예: '강남구·2024-05로 검색했어요'.
-            - 현재 화면 상태(참고용): filters=%s, page=%s.
+            - 현재 화면 상태(참고용): filters=%s, page=%s, totalPages=%s. paginate 시 존재하지 않는 페이지는 요청하지 마라.
             """;
 
     private final ChatClient chatClient;
@@ -178,10 +184,12 @@ public class AiAgentController {
                 ? Map.of()
                 : request.currentFilters();
         Integer currentPage = request == null ? null : request.currentPage();
+        Integer totalPages = request == null ? null : request.totalPages();
         return SYSTEM_PROMPT_TEMPLATE.formatted(
                 String.join(", ", capabilities),
                 currentFilters,
-                currentPage == null ? "-" : currentPage.toString());
+                currentPage == null ? "-" : currentPage.toString(),
+                totalPages == null ? "-" : totalPages.toString());
     }
 
     private static ResponseEntity<ApiResponse<AgentCommand>> failure(HttpStatus status, String message) {
