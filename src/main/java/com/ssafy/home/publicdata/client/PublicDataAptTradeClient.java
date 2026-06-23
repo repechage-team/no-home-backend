@@ -52,6 +52,9 @@ public class PublicDataAptTradeClient {
         requestFactory.setReadTimeout(READ_TIMEOUT_MS);
         return RestClient.builder()
                 .requestFactory(requestFactory)
+                // 명시 User-Agent. data.go.kr 앞단 WAF가 일부 봇 UA(curl/wget)를 차단함을 확인했고,
+                // 기본 UA에 의존하지 않도록 서비스 식별 UA를 둔다.
+                .defaultHeader("User-Agent", "no-home/1.0")
                 .build();
     }
 }

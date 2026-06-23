@@ -288,8 +288,8 @@ public class HouseService {
                 importedRanges.add(new AutoImportRangeResponse(lawdCd, condition.dealYmd(), result.status(), result.message()));
             } catch (RuntimeException exception) {
                 AutoImportException.Reason reason = classifyAutoImportFailure(exception);
-                log.warn("Auto import failed: reason={}, lawdCd={}, dealYmd={}",
-                        reason, lawdCd, condition.dealYmd());
+                log.warn("Auto import failed: reason={}, lawdCd={}, dealYmd={}{}",
+                        reason, lawdCd, condition.dealYmd(), autoImportFailureDetail(exception));
                 throw new AutoImportException(reason,
                         "Auto import failed for lawdCd=" + lawdCd + ", dealYmd=" + condition.dealYmd(),
                         exception);
@@ -310,6 +310,16 @@ public class HouseService {
             return false;
         }
         return hasText(condition.lawdCd()) || hasText(condition.sido());
+    }
+
+    // 자동임포트 실패 원인 진단용 상세. PublicDataApiException의 resultCode/resultMsg는 secret이 아니므로
+    // 그대로 노출해 재진단을 돕는다. 그 외 예외는 메시지에 요청 URL(serviceKey)이 섞일 수 있어 클래스명만 노출.
+    private static String autoImportFailureDetail(RuntimeException exception) {
+        if (exception instanceof PublicDataApiException publicDataApiException) {
+            return ", resultCode=" + publicDataApiException.resultCode()
+                    + ", resultMsg=" + publicDataApiException.resultMsg();
+        }
+        return ", cause=" + exception.getClass().getSimpleName();
     }
 
     private static AutoImportException.Reason classifyAutoImportFailure(RuntimeException exception) {
