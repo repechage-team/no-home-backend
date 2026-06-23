@@ -100,6 +100,93 @@ class AgentCommandGuardsTest {
         assertThat(result.filters()).containsEntry("bedrooms", "3");
     }
 
+    @Test
+    void passesPhase2FilterKeysUntouched() {
+        // sort/umdNm/minPrice/maxPrice 값 정합성은 프론트가 최종 강제한다. 서버 가드는 통과시킨다(값 가드 무추가).
+        AgentCommand command = search(Map.of(
+                "sigungu", "강남구",
+                "umdNm", "역삼동",
+                "sort", "priceDesc",
+                "minPrice", "50000",
+                "maxPrice", "90000"));
+
+        AgentCommand result = AgentCommandGuards.validate(command, resolver, now);
+
+        assertThat(result).isSameAs(command);
+        assertThat(result.filters())
+                .containsEntry("sort", "priceDesc")
+                .containsEntry("minPrice", "50000")
+                .containsEntry("maxPrice", "90000")
+                .containsEntry("umdNm", "역삼동");
+    }
+
+    @Test
+    void passesPaginateWithAbsolutePage() {
+        AgentCommand command = new AgentCommand("paginate", null, 3, null, null, null, null);
+
+        AgentCommand result = AgentCommandGuards.validate(command, resolver, now);
+
+        assertThat(result).isSameAs(command);
+        assertThat(result.page()).isEqualTo(3);
+    }
+
+    @Test
+    void passesPaginateWithDirection() {
+        AgentCommand command = new AgentCommand("paginate", null, null, "next", null, null, null);
+
+        AgentCommand result = AgentCommandGuards.validate(command, resolver, now);
+
+        assertThat(result).isSameAs(command);
+        assertThat(result.direction()).isEqualTo("next");
+    }
+
+    @Test
+    void clarifiesForPaginateWithoutPageOrDirection() {
+        AgentCommand command = new AgentCommand("paginate", null, null, null, null, null, null);
+
+        AgentCommand result = AgentCommandGuards.validate(command, resolver, now);
+
+        assertThat(result.action()).isEqualTo("clarify");
+    }
+
+    @Test
+    void clarifiesForPaginateWithNonPositivePage() {
+        AgentCommand command = new AgentCommand("paginate", null, 0, null, null, null, null);
+
+        AgentCommand result = AgentCommandGuards.validate(command, resolver, now);
+
+        assertThat(result.action()).isEqualTo("clarify");
+    }
+
+    @Test
+    void passesSelectItemWithValidIndex() {
+        AgentCommand command = new AgentCommand("selectItem", null, null, null, 1, null, null);
+
+        AgentCommand result = AgentCommandGuards.validate(command, resolver, now);
+
+        assertThat(result).isSameAs(command);
+        assertThat(result.itemIndex()).isEqualTo(1);
+    }
+
+    @Test
+    void passesMapFocusWithValidIndex() {
+        AgentCommand command = new AgentCommand("mapFocus", null, null, null, 2, null, null);
+
+        AgentCommand result = AgentCommandGuards.validate(command, resolver, now);
+
+        assertThat(result).isSameAs(command);
+        assertThat(result.itemIndex()).isEqualTo(2);
+    }
+
+    @Test
+    void clarifiesForItemActionWithoutIndex() {
+        AgentCommand selectNull = new AgentCommand("selectItem", null, null, null, null, null, null);
+        AgentCommand focusZero = new AgentCommand("mapFocus", null, null, null, 0, null, null);
+
+        assertThat(AgentCommandGuards.validate(selectNull, resolver, now).action()).isEqualTo("clarify");
+        assertThat(AgentCommandGuards.validate(focusZero, resolver, now).action()).isEqualTo("clarify");
+    }
+
     private static AgentCommand search(Map<String, String> filters) {
         return new AgentCommand("search", filters, null, null, null, null, null);
     }
