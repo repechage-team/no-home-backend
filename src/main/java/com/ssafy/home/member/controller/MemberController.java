@@ -164,6 +164,7 @@ public class MemberController {
             case VALIDATION -> HttpStatus.BAD_REQUEST;
             case DUPLICATE_EMAIL -> HttpStatus.CONFLICT;
             case INVALID_CREDENTIALS, UNAUTHENTICATED -> HttpStatus.UNAUTHORIZED;
+            case FORBIDDEN -> HttpStatus.FORBIDDEN;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
         };
         return ResponseEntity.status(status).body(ApiResponse.fail(e.getMessage(), null));

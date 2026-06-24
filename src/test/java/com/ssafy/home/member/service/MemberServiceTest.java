@@ -24,7 +24,7 @@ class MemberServiceTest {
     void signupCreatesMemberWithHashedPasswordAndNoSecretResponse() {
         StubMemberMapper mapper = new StubMemberMapper();
         PasswordHasher passwordHasher = new PasswordHasher();
-        MemberService service = new MemberService(mapper, passwordHasher);
+        MemberService service = new MemberService(mapper, passwordHasher, "");
 
         MemberResponse response = service.signup(new MemberSignupRequest(
                 " user@example.com ", "plain-password", " User ", " 010-0000-0000 "
@@ -40,7 +40,7 @@ class MemberServiceTest {
     void signupFailsWhenEmailAlreadyExists() {
         StubMemberMapper mapper = new StubMemberMapper();
         mapper.save(member(1L, "user@example.com", "hash", "User", null));
-        MemberService service = new MemberService(mapper, new PasswordHasher());
+        MemberService service = new MemberService(mapper, new PasswordHasher(), "");
 
         assertThatThrownBy(() -> service.signup(new MemberSignupRequest(
                 "user@example.com", "password", "User", null
@@ -55,7 +55,7 @@ class MemberServiceTest {
         StubMemberMapper mapper = new StubMemberMapper();
         PasswordHasher passwordHasher = new PasswordHasher();
         mapper.save(member(1L, "user@example.com", passwordHasher.hash("password"), "User", null));
-        MemberService service = new MemberService(mapper, passwordHasher);
+        MemberService service = new MemberService(mapper, passwordHasher, "");
 
         MemberResponse response = service.login("user@example.com", "password");
 
@@ -68,7 +68,7 @@ class MemberServiceTest {
         StubMemberMapper mapper = new StubMemberMapper();
         PasswordHasher passwordHasher = new PasswordHasher();
         mapper.save(member(1L, "user@example.com", passwordHasher.hash("password"), "User", null));
-        MemberService service = new MemberService(mapper, passwordHasher);
+        MemberService service = new MemberService(mapper, passwordHasher, "");
 
         assertThatThrownBy(() -> service.login("user@example.com", "wrong"))
                 .isInstanceOf(MemberException.class)
@@ -81,7 +81,7 @@ class MemberServiceTest {
         StubMemberMapper mapper = new StubMemberMapper();
         PasswordHasher passwordHasher = new PasswordHasher();
         mapper.save(member(1L, "user@example.com", passwordHasher.hash("old-password"), "User", "010"));
-        MemberService service = new MemberService(mapper, passwordHasher);
+        MemberService service = new MemberService(mapper, passwordHasher, "");
 
         MemberResponse response = service.resetPassword(new PasswordResetRequest(
                 " user@example.com ", " User ", " 010 ", "new-password"
@@ -98,7 +98,7 @@ class MemberServiceTest {
         StubMemberMapper mapper = new StubMemberMapper();
         PasswordHasher passwordHasher = new PasswordHasher();
         mapper.save(member(1L, "user@example.com", passwordHasher.hash("old-password"), "User", "010"));
-        MemberService service = new MemberService(mapper, passwordHasher);
+        MemberService service = new MemberService(mapper, passwordHasher, "");
 
         assertThatThrownBy(() -> service.resetPassword(new PasswordResetRequest(
                 "user@example.com", "Wrong", "010", "new-password"
@@ -113,7 +113,7 @@ class MemberServiceTest {
         StubMemberMapper mapper = new StubMemberMapper();
         mapper.save(member(1L, "one@example.com", "hash1", "One", null));
         mapper.save(member(2L, "two@example.com", "hash2", "Two", null));
-        MemberService service = new MemberService(mapper, new PasswordHasher());
+        MemberService service = new MemberService(mapper, new PasswordHasher(), "");
 
         assertThat(service.findCurrentMember(1L).email()).isEqualTo("one@example.com");
         MemberResponse updated = service.updateCurrentMember(1L, new MemberUpdateRequest("Changed", "010"));
@@ -127,11 +127,11 @@ class MemberServiceTest {
     }
 
     @Test
-    void searchMembersRequiresLoginAndSearchesByKeyword() {
+    void searchMembersRequiresAdminAndSearchesByKeyword() {
         StubMemberMapper mapper = new StubMemberMapper();
         mapper.save(member(1L, "one@example.com", "hash1", "One", "010-1111"));
         mapper.save(member(2L, "two@example.com", "hash2", "Two", "010-2222"));
-        MemberService service = new MemberService(mapper, new PasswordHasher());
+        MemberService service = new MemberService(mapper, new PasswordHasher(), "one@example.com");
 
         List<MemberResponse> results = service.searchMembers(1L, "two");
 
@@ -140,11 +140,15 @@ class MemberServiceTest {
                 .isInstanceOf(MemberException.class)
                 .extracting("errorCode")
                 .isEqualTo(MemberErrorCode.UNAUTHENTICATED);
+        assertThatThrownBy(() -> service.searchMembers(2L, "one"))
+                .isInstanceOf(MemberException.class)
+                .extracting("errorCode")
+                .isEqualTo(MemberErrorCode.FORBIDDEN);
     }
 
     @Test
     void unauthenticatedCurrentMemberAccessIsBlocked() {
-        MemberService service = new MemberService(new StubMemberMapper(), new PasswordHasher());
+        MemberService service = new MemberService(new StubMemberMapper(), new PasswordHasher(), "");
 
         assertThatThrownBy(() -> service.findCurrentMember(null))
                 .isInstanceOf(MemberException.class)

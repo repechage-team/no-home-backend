@@ -7,20 +7,30 @@ import com.ssafy.home.member.dto.MemberUpdateRequest;
 import com.ssafy.home.member.dto.PasswordResetRequest;
 import com.ssafy.home.member.mapper.MemberInsertCommand;
 import com.ssafy.home.member.mapper.MemberMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class MemberService {
 
     private final MemberMapper memberMapper;
     private final PasswordHasher passwordHasher;
+    private final Set<String> adminEmails;
 
-    public MemberService(MemberMapper memberMapper, PasswordHasher passwordHasher) {
+    public MemberService(
+            MemberMapper memberMapper,
+            PasswordHasher passwordHasher,
+            @Value("${notice.admin-emails:}") String adminEmails
+    ) {
         this.memberMapper = memberMapper;
         this.passwordHasher = passwordHasher;
+        this.adminEmails = parseAdminEmails(adminEmails);
     }
 
     @Transactional
@@ -76,7 +86,7 @@ public class MemberService {
     }
 
     public List<MemberResponse> searchMembers(Long currentMemberId, String keyword) {
-        requireMemberId(currentMemberId);
+        requireAdminMemberId(currentMemberId);
         String normalizedKeyword = required(keyword, "keyword is required.");
         return memberMapper.searchMembers(normalizedKeyword).stream()
                 .map(MemberResponse::from)
@@ -114,6 +124,39 @@ public class MemberService {
         if (memberId == null) {
             throw new MemberException(MemberErrorCode.UNAUTHENTICATED, "login is required.");
         }
+    }
+
+    private void requireAdminMemberId(Long memberId) {
+        requireMemberId(memberId);
+        if (!isAdmin(memberId)) {
+            throw new MemberException(MemberErrorCode.FORBIDDEN, "admin permission is required.");
+        }
+    }
+
+    private boolean isAdmin(Long memberId) {
+        if (adminEmails.isEmpty()) {
+            return false;
+        }
+        return memberMapper.selectById(memberId)
+                .map(Member::email)
+                .map(MemberService::normalizeEmail)
+                .filter(email -> !email.isBlank())
+                .map(adminEmails::contains)
+                .orElse(false);
+    }
+
+    private static Set<String> parseAdminEmails(String value) {
+        if (value == null || value.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(value.split(","))
+                .map(MemberService::normalizeEmail)
+                .filter(email -> !email.isBlank())
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private static String normalizeEmail(String value) {
+        return value == null ? "" : value.trim().toLowerCase();
     }
 
     private static MemberException invalidCredentials() {

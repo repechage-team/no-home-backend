@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.home.interest.mapper.InterestRegionMapper">
+
+    <select id="selectByMemberId" resultType="com.ssafy.home.interest.dto.InterestRegion">
+        SELECT
+            ir.interest_region_id,
+            ir.member_id,
+            r.region_id,
+            r.lawd_cd,
+            r.legal_dong_code,
+            r.sido,
+            r.sigungu,
+            r.umd_nm,
+            ir.created_at
+        FROM interest_regions ir
+        INNER JOIN regions r ON r.region_id = ir.region_id
+        WHERE ir.member_id = #{memberId}
+        ORDER BY r.sido, r.sigungu, r.umd_nm
+    </select>
+
+    <select id="selectRegionId" resultType="long">
+        SELECT region_id
+        FROM regions
+        WHERE lawd_cd = #{lawdCd}
+          AND umd_nm = #{umdNm}
+    </select>
+
+    <insert id="insertRegion">
+        INSERT INTO regions (lawd_cd, legal_dong_code, sido, sigungu, umd_nm)
+        VALUES (#{lawdCd}, #{legalDongCode}, #{sido}, #{sigungu}, #{umdNm})
+        ON DUPLICATE KEY UPDATE
+            legal_dong_code = VALUES(legal_dong_code),
+            sido = VALUES(sido),
+            sigungu = VALUES(sigungu)
+    </insert>
+
+    <insert id="insertInterestRegion">
+        INSERT IGNORE INTO interest_regions (member_id, region_id)
+        VALUES (#{memberId}, #{regionId})
+    </insert>
+
+    <delete id="deleteInterestRegion">
+        DELETE FROM interest_regions
+        WHERE member_id = #{memberId}
+          AND interest_region_id = #{interestRegionId}
+    </delete>
+</mapper>

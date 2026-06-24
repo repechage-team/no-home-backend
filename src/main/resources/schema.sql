@@ -126,3 +126,32 @@ CREATE TABLE IF NOT EXISTS member_refresh_tokens (
     CONSTRAINT fk_member_refresh_tokens_member
         FOREIGN KEY (member_id) REFERENCES members (member_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS notices (
+    notice_id BIGINT NOT NULL AUTO_INCREMENT,
+    member_id BIGINT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (notice_id),
+    KEY idx_notices_created_at (created_at),
+    KEY idx_notices_member_id (member_id),
+    CONSTRAINT fk_notices_member
+        FOREIGN KEY (member_id) REFERENCES members (member_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS interest_regions (
+    interest_region_id BIGINT NOT NULL AUTO_INCREMENT,
+    member_id BIGINT NOT NULL,
+    region_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (interest_region_id),
+    UNIQUE KEY uq_interest_regions_member_region (member_id, region_id),
+    KEY idx_interest_regions_member_id (member_id),
+    KEY idx_interest_regions_region_id (region_id),
+    CONSTRAINT fk_interest_regions_member
+        FOREIGN KEY (member_id) REFERENCES members (member_id) ON DELETE CASCADE,
+    CONSTRAINT fk_interest_regions_region
+        FOREIGN KEY (region_id) REFERENCES regions (region_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -5,5 +5,6 @@ public enum MemberErrorCode {
     DUPLICATE_EMAIL,
     INVALID_CREDENTIALS,
     UNAUTHENTICATED,
+    FORBIDDEN,
     NOT_FOUND
 }
