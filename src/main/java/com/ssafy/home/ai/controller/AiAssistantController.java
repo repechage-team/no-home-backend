@@ -18,7 +18,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,11 +37,10 @@ import java.util.Map;
  * 페이지 조작이면 액션 tool({@link PageActionTools}, returnDirect=true)이 반환한 {@link AgentCommand}를 돌려준다.
  * 모드 토글이 없고, "아무 tool도 안 부르고 일반 답변"이 1급 선택지라 모호·불만 발화가 억지 action으로 새지 않는다.
  * <p>
- * 피처 플래그 {@code ai.assistant.enabled=true}일 때만 빈으로 등록된다(기존 /chat·/agent와 병행).
+ * 챗봇 기본 엔드포인트(레거시 /chat·/agent 대체). 키 미설정 시 ChatClient 빈이 없어 503으로 graceful 비활성된다.
  */
 @RestController
 @RequestMapping("/api/ai")
-@ConditionalOnProperty(name = "ai.assistant.enabled", havingValue = "true")
 public class AiAssistantController {
 
     private static final Logger log = LoggerFactory.getLogger(AiAssistantController.class);
