@@ -16,7 +16,9 @@ updated: 2026-06-24
 ## 문서
 - [2026-06-24 남은 작업 백로그 (재편성)](backlog/2026-06-24-backlog.md) — `type: report`, **진행 중 (남은 작업 단일 출처, 최신)**
 - [2026-06-23 인계 / 재개 가이드 (당일 마감)](handoff/2026-06-23-handoff.md) — `type: report`, **이어받을 때 먼저 읽기 (최신 인계)**
-- [2026-06-23 AI 어시스턴트 tool calling 혼합형 재설계 (타당성+계획)](proposals/2026-06-23-tool-calling-assistant.md) — `type: proposal`, `status: implemented`, **재설계 구현 완료 (BE #29 / FE #13)**
+- [2026-06-24 tool calling 재설계 구현 & 검증](reports/2026-06-24-tool-calling-assistant-implementation.md) — `type: report`, **재설계 구현 내역·트러블슈팅 (BE #29 / FE #13)**
+- [2026-06-24 단기 대화기억 구현 & 저장소 선택 근거](reports/2026-06-24-short-term-memory-implementation.md) — `type: report`, **InMemory 선택 근거·저장소 비교(localStorage/RDB/Redis) (BE #28 / FE #12)**
+- [2026-06-23 AI 어시스턴트 tool calling 혼합형 재설계 (타당성+계획)](proposals/2026-06-23-tool-calling-assistant.md) — `type: proposal`, `status: implemented`, **재설계 (타당성+계획) → 구현은 위 리포트**
 - [2026-06-23 AI 에이전트 모드 사용자 시나리오 체크리스트](guides/2026-06-23-agent-mode-scenarios.md) — `type: reference`, **무엇을 할 수 있나 (검증된 시나리오)**
 - [2026-06-23 남은 작업 백로그 (재편성)](backlog/2026-06-23-backlog.md) — `type: report`, 2026-06-23 동결 스냅샷 (superseded → 06-24)
 - [2026-06-22 인계 / 재개 가이드 (당일 마감)](handoff/2026-06-22-handoff.md) — `type: report`, 2026-06-22 스냅샷
