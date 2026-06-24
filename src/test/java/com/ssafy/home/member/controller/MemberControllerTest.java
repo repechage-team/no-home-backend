@@ -184,6 +184,21 @@ class MemberControllerTest {
     }
 
     @Test
+    void memberSearchWithoutAdminPermissionReturnsForbidden() throws Exception {
+        MemberService service = mock(MemberService.class);
+        MemberAuthService authService = mock(MemberAuthService.class);
+        when(service.searchMembers(1L, "user"))
+                .thenThrow(new MemberException(MemberErrorCode.FORBIDDEN, "admin permission is required."));
+        MockMvc mockMvc = standaloneSetup(controller(service, authService)).build();
+
+        mockMvc.perform(get("/api/members/search")
+                        .requestAttr(AuthenticatedMember.REQUEST_ATTRIBUTE, 1L)
+                        .param("keyword", "user"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
     void interceptorProtectsOnlyMemberMeRoutes() throws Exception {
         MemberService memberService = mock(MemberService.class);
         HouseService houseService = mock(HouseService.class);
