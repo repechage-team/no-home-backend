@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * SSAFY_GMS_API_KEY(spring.ai.openai.api-key) 미설정 시에도 앱이 정상 기동되는지 검증한다.
  * AiKeyEnvironmentPostProcessor가 OpenAI 모델 자동구성을 비활성화하므로 ChatClient 빈은 없고
- * (= /api/ai/chat 은 503), 컨트롤러를 포함한 나머지 컨텍스트는 정상 로드된다.
+ * (= /api/ai/assistant 는 503), 컨트롤러를 포함한 나머지 컨텍스트는 정상 로드된다.
  */
 @SpringBootTest(properties = {
         "spring.datasource.driver-class-name=org.h2.Driver",
@@ -31,6 +31,6 @@ class AiChatDisabledWhenKeyMissingTest {
         // 키가 없으면 ChatClient 빈은 생성되지 않는다(챗봇 비활성).
         assertThat(context.getBeanNamesForType(ChatClient.class)).isEmpty();
         // 그러나 컨트롤러는 존재해 요청을 받아 503으로 안내한다(앱은 정상 기동).
-        assertThat(context.containsBean("aiChatController")).isTrue();
+        assertThat(context.containsBean("aiAssistantController")).isTrue();
     }
 }

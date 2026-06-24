@@ -2,10 +2,10 @@
 title: AI 어시스턴트 tool calling 혼합형 재설계 — 타당성 조사 & 전체 계획
 domain: ai-chatbot
 type: proposal
-status: proposed
+status: implemented
 author: 이정헌
 created: 2026-06-23
-updated: 2026-06-23
+updated: 2026-06-24
 related:
   - ../troubleshooting/2026-06-23-agent-intent-mapping-and-capability-drift.md
   - ../reports/2026-06-23-agent-mode-phase2-implementation.md

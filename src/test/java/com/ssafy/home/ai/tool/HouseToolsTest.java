@@ -35,7 +35,7 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "부산진구"))
                 .thenReturn(List.of());
 
-        String result = houseTools.searchSeoulAptDeals("부산진구", null, null, "202405");
+        String result = houseTools.searchSeoulAptDeals("부산진구", null, null, "202405", null);
 
         assertThat(result)
                 .contains("지원하지 않는 지역입니다")
@@ -48,13 +48,14 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "동작구"))
                 .thenReturn(List.of("11590"));
         when(houseService.searchHouseDeals(
-                "11590", null, null, "흑석동", null, "202405", 1, 100, true
+                "11590", null, null, "흑석동", null, "202405", null, null,
+                1, 100, true, null, null, null, null, null, null, null, "sale"
         )).thenReturn(new HouseSearchPageResponse(List.of(
                 deal("낮은가격아파트", 10_000, 3),
                 deal("높은가격아파트", 30_000, 15)
         ), 1, 100, 120));
 
-        String result = houseTools.searchSeoulAptDeals("동작구", "흑석동", null, "202405");
+        String result = houseTools.searchSeoulAptDeals("동작구", "흑석동", null, "202405", null);
 
         assertThat(result)
                 .contains("총 거래 건수: 120건")
@@ -65,7 +66,8 @@ class HouseToolsTest {
         assertThat(result.indexOf("높은가격아파트"))
                 .isLessThan(result.indexOf("낮은가격아파트"));
         verify(houseService).searchHouseDeals(
-                "11590", null, null, "흑석동", null, "202405", 1, 100, true
+                "11590", null, null, "흑석동", null, "202405", null, null,
+                1, 100, true, null, null, null, null, null, null, null, "sale"
         );
     }
 
@@ -74,10 +76,11 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "강남구"))
                 .thenReturn(List.of("11680"));
         when(houseService.searchHouseDeals(
-                "11680", null, null, null, "없는아파트", "202405", 1, 100, true
+                "11680", null, null, null, "없는아파트", "202405", null, null,
+                1, 100, true, null, null, null, null, null, null, null, "sale"
         )).thenReturn(new HouseSearchPageResponse(List.of(), 1, 100, 0));
 
-        String result = houseTools.searchSeoulAptDeals("강남구", null, "없는아파트", "202405");
+        String result = houseTools.searchSeoulAptDeals("강남구", null, "없는아파트", "202405", null);
 
         assertThat(result)
                 .contains("조건에 맞는 실거래가가 없습니다")
@@ -91,7 +94,8 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "동작구"))
                 .thenReturn(List.of("11590"));
         when(houseService.searchHouseDeals(
-                "11590", null, null, "흑석동", "비밀아파트", "202405", 1, 100, true
+                "11590", null, null, "흑석동", "비밀아파트", "202405", null, null,
+                1, 100, true, null, null, null, null, null, null, null, "sale"
         )).thenReturn(new HouseSearchPageResponse(List.of(
                 deal("비밀아파트", 30_000, 15)
         ), 1, 100, 120));
@@ -105,7 +109,7 @@ class HouseToolsTest {
         logger.setLevel(Level.DEBUG);
 
         try {
-            houseTools.searchSeoulAptDeals("동작구", "흑석동", "비밀아파트", "202405");
+            houseTools.searchSeoulAptDeals("동작구", "흑석동", "비밀아파트", "202405", null);
 
             assertThat(appender.list)
                     .extracting(ILoggingEvent::getFormattedMessage)
@@ -125,10 +129,11 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "마포구"))
                 .thenReturn(List.of("11440"));
         when(houseService.searchHouseDeals(
-                "11440", null, null, null, null, "202403", 1, 100, true
+                "11440", null, null, null, null, "202403", null, null,
+                1, 100, true, null, null, null, null, null, null, null, "sale"
         )).thenThrow(new IllegalStateException("upstream timeout"));
 
-        assertThatThrownBy(() -> houseTools.searchSeoulAptDeals("마포구", null, null, "202403"))
+        assertThatThrownBy(() -> houseTools.searchSeoulAptDeals("마포구", null, null, "202403", null))
                 .isInstanceOf(HouseToolException.class)
                 .hasMessage("House deal lookup failed")
                 .hasCauseInstanceOf(IllegalStateException.class);
@@ -139,7 +144,7 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "강남구"))
                 .thenReturn(List.of("11680"));
 
-        String result = houseTools.searchSeoulAptDeals("강남구", null, null, "2024-05");
+        String result = houseTools.searchSeoulAptDeals("강남구", null, null, "2024-05", null);
 
         assertThat(result)
                 .contains("YYYYMM")
@@ -153,7 +158,7 @@ class HouseToolsTest {
                 .thenReturn(List.of("11680"));
 
         // 9999년 12월은 항상 미래이므로 실제 시계와 무관하게 결정적이다.
-        String result = houseTools.searchSeoulAptDeals("강남구", null, null, "999912");
+        String result = houseTools.searchSeoulAptDeals("강남구", null, null, "999912", null);
 
         assertThat(result).contains("미래 월은 조회할 수 없어요");
         verifyNoInteractions(houseService);
@@ -180,14 +185,15 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "마포구"))
                 .thenReturn(List.of("11440"));
         when(houseService.searchHouseDeals(
-                "11440", null, null, null, null, "202403", 1, 100, true
+                "11440", null, null, null, null, "202403", null, null,
+                1, 100, true, null, null, null, null, null, null, null, "sale"
         )).thenThrow(new AutoImportException(
                 AutoImportException.Reason.QUOTA,
                 "public data import failed",
                 new RuntimeException("upstream 503")
         ));
 
-        String result = houseTools.searchSeoulAptDeals("마포구", null, null, "202403");
+        String result = houseTools.searchSeoulAptDeals("마포구", null, null, "202403", null);
 
         assertThat(result)
                 .contains("공공데이터 호출 한도")
@@ -201,10 +207,11 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "강남구"))
                 .thenReturn(List.of("11680"));
         when(houseService.searchHouseDeals(
-                "11680", null, null, null, null, null, 1, 100, true
+                "11680", null, null, null, null, null, null, null,
+                1, 100, true, null, null, null, null, null, null, null, "sale"
         )).thenReturn(new HouseSearchPageResponse(List.of(), 1, 100, 0));
 
-        String result = houseTools.searchSeoulAptDeals("강남구", null, null, null);
+        String result = houseTools.searchSeoulAptDeals("강남구", null, null, null, null);
 
         assertThat(result)
                 .contains("거래연월을 함께 알려주세요")
@@ -216,18 +223,21 @@ class HouseToolsTest {
         when(lawdCodeResolver.resolveLawdCds(null, SeoulLawdCodeResolver.SEOUL_SIDO_NAME, "동작구"))
                 .thenReturn(List.of("11590"));
         when(houseService.searchHouseDeals(
-                "11590", null, null, null, null, null, 1, 100, true
+                "11590", null, null, null, null, null, null, null,
+                1, 100, true, null, null, null, null, null, null, null, "sale"
         )).thenReturn(new HouseSearchPageResponse(List.of(
                 deal("보유아파트", 20_000, 5)
         ), 1, 100, 1));
 
-        String result = houseTools.searchSeoulAptDeals("동작구", null, null, null);
+        String result = houseTools.searchSeoulAptDeals("동작구", null, null, null, null);
 
         assertThat(result)
                 .contains("보유 중인 전체 기간 기준")
                 .contains("총 거래 건수: 1건")
                 .contains("보유아파트");
     }
+
+    // 전월세(보증금/월세) 포맷 분기는 결과 DTO 풀 생성자 의존이 커 docker 실측으로 검증한다(Phase 1 검증 절차).
 
     private static HouseSearchResultResponse deal(String aptName, int amountManwon, int floor) {
         return new HouseSearchResultResponse(

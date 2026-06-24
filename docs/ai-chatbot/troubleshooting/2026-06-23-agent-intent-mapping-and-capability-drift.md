@@ -2,10 +2,10 @@
 title: 에이전트 의도 매핑 오분류 + 신규 필터(전월세) capability 미동기화
 domain: ai-chatbot
 type: troubleshooting
-status: investigating
+status: resolved
 author: 이정헌
 created: 2026-06-23
-updated: 2026-06-23
+updated: 2026-06-24
 related:
   - ../proposals/2026-06-23-tool-calling-assistant.md
   - ../backlog/2026-06-23-backlog.md
