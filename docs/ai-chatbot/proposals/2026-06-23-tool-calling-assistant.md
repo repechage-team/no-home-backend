@@ -15,6 +15,8 @@ related:
 
 # AI 어시스턴트 tool calling 혼합형 재설계
 
+> **`status: implemented`** — 구현 완료. 구현 내역·검증·트러블슈팅은 [tool calling 재설계 구현 리포트](../reports/2026-06-24-tool-calling-assistant-implementation.md) 참조. 이 문서는 타당성·계획 원본이다.
+
 분리형(질문 모드 `/chat` + 실행 모드 `/agent`, 모드 토글)을 **단일 대화에서 LLM이 tool calling으로 분기**하는
 혼합형으로 재설계한다. 일반 질문이면 텍스트 답변, 페이지 조작이면 프론트 액션 tool 호출.
 
