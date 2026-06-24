@@ -141,6 +141,52 @@ CREATE TABLE IF NOT EXISTS notices (
         FOREIGN KEY (member_id) REFERENCES members (member_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+INSERT INTO members (email, password_hash, name, phone)
+VALUES (
+    'admin@nohome.local',
+    '$2a$10$OBOz1AyK4cFPGtQ5q7tccOkpEt5WS.3JRzHZQ537mW4HNEvJZBUuG',
+    'NoHome 관리자',
+    '010-0000-0000'
+)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    phone = VALUES(phone),
+    updated_at = CURRENT_TIMESTAMP;
+
+INSERT INTO notices (member_id, title, content, created_at, updated_at)
+SELECT member_id,
+       'NoHome 서비스 이용 안내',
+       'NoHome에서는 서울시 아파트 실거래가를 거래 유형, 지역, 거래월, 가격 조건으로 검색할 수 있습니다. 검색 결과는 목록과 지도 마커로 함께 제공됩니다.',
+       CURRENT_TIMESTAMP - INTERVAL 2 DAY,
+       CURRENT_TIMESTAMP - INTERVAL 2 DAY
+FROM members
+WHERE email = 'admin@nohome.local'
+  AND NOT EXISTS (
+      SELECT 1 FROM notices WHERE title = 'NoHome 서비스 이용 안내'
+  );
+
+INSERT INTO notices (member_id, title, content, created_at, updated_at)
+SELECT member_id,
+       '검색 결과 지도 표시 안내',
+       '검색 결과 목록의 현재 페이지에 포함된 아파트는 지도 위에 마커로 표시됩니다. 페이지를 이동하거나 조건을 변경하면 지도 표시도 함께 갱신됩니다.',
+       CURRENT_TIMESTAMP - INTERVAL 1 DAY,
+       CURRENT_TIMESTAMP - INTERVAL 1 DAY
+FROM members
+WHERE email = 'admin@nohome.local'
+  AND NOT EXISTS (
+      SELECT 1 FROM notices WHERE title = '검색 결과 지도 표시 안내'
+  );
+
+INSERT INTO notices (member_id, title, content)
+SELECT member_id,
+       'AI 도우미 사용 안내',
+       '로그인 후 AI 도우미를 사용하면 자연어로 시세를 질문하거나 검색 조건 변경, 정렬, 페이지 이동을 요청할 수 있습니다.'
+FROM members
+WHERE email = 'admin@nohome.local'
+  AND NOT EXISTS (
+      SELECT 1 FROM notices WHERE title = 'AI 도우미 사용 안내'
+  );
+
 CREATE TABLE IF NOT EXISTS interest_regions (
     interest_region_id BIGINT NOT NULL AUTO_INCREMENT,
     member_id BIGINT NOT NULL,
